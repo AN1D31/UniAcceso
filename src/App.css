@@ -1,3 +1,33 @@
+form {
+  border-collapse: collapse;
+  max-width: 1000px;
+  width: 100%;
+  margin: 3rem auto;
+}
+
+table{
+  border-collapse: collapse;
+  max-width: 1500px;
+  width: 100%;
+  margin: 2rem auto;
+}
+
+table th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+  vertical-align: middle; 
+}
+
+.in, .edit {
+  border-collapse: collapse;
+  max-width: 150px;
+  width: 100%;
+  margin: 2rem auto;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
