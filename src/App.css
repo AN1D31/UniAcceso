@@ -28,6 +28,28 @@ table th, td {
   vertical-align: middle;
 }
 
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto; 
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  text-align: center;
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

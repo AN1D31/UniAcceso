@@ -98,7 +98,7 @@ const App = () => {
 
   return(
     <div>
-      <h2 class="in">Ingresar Beca</h2>
+      <h2 className="in">Ingresar Beca</h2>
       <form onSubmit={createScholarship}>
         <input 
           type="text"
@@ -142,7 +142,7 @@ const App = () => {
         />
         <button type='Submit'>Publicar</button>
       </form>
-      <h2 class="edit">Editar Beca</h2>
+      <h2 className="edit">Editar Beca</h2>
       <form onSubmit={()=>updateScholarship(scholarship2.id)}>
         <input 
           type="text"
@@ -182,38 +182,42 @@ const App = () => {
         />
         <button type='Submit'>Actualizar</button>
       </form>      
+      
+      <div className="cards">
+        {scholarships.map((scholarship)=>
+          <div key={scholarship.name} className="card">
+            <div className="bg-blue-600 p-4">
+              <h3 className="text-xl font-bold text-white truncate">
+                {scholarship.name}
+              </h3>
+            </div>  
 
-      <table>
-        <thead>
-          <tr>
-            <th>Id beca</th>
-            <th>Nombre beca</th>
-            <th>URL</th>
-            <th>Descripción</th>
-            <th>Requisitos</th>
-            <th>Fecha Inicio</th>
-            <th>Fecha Finalización</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
+            <div className="flex flex-col gap-3 p-4">
+              <div className="flex justify-between text-sm text-gray-500 font-medium">
+                <span>Inicio: {scholarship.start_date}</span>
+                <span>Fin: {scholarship.finish_date}</span>
+              </div>
+              
+              <p className="text-gray-700 text-sm line-clamp-3">
+                {scholarship.description}
+              </p>
 
-        <tbody>
-          {scholarships.map((scholarship)=>
-            <tr key={scholarship.id}>
-              <td>{scholarship.id}</td>
-              <td>{scholarship.name}</td>
-              <td>{scholarship.url}</td>
-              <td>{scholarship.description}</td>
-              <td>{scholarship.requirements}</td>
-              <td>{scholarship.start_date}</td>
-              <td>{scholarship.finish_date}</td>
-              <td><button onClick={()=> deleteScholarship(scholarship.id)}>Borrar</button>
-                  <button onClick={()=> displayScholarship(scholarship.id)}>Modificar</button>
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+              <p>
+                {scholarship.url}
+              </p>
+            </div>
+            
+            <div className="flex justify-end gap-2 bg-gray-50 p-4 border-t border-gray-100">
+              <button onClick={()=> deleteScholarship(scholarship.id)} className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                Borrar
+              </button>
+              <button onClick={()=> displayScholarship(scholarship.id)} className="px-3 py-1.5 text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-colors">
+                Modificar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
