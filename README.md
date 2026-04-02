@@ -1,2 +1,2 @@
 # UniAcceso
-Web solution for discovering academic programs and scholarships
+Web solution for discovering academic programs and scholarships (in progress)
