@@ -128,7 +128,14 @@ const App = () => {
                 {scholarship.description}
               </p>
 
-              <a href="">{scholarship.url}</a>
+              <a 
+                href={scholarship.url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-600 hover:text-blue-800 hover:underline text-sm truncate"
+              >
+                {scholarship.url}
+              </a>
                
               
             </div>
