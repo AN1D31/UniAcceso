@@ -14,6 +14,8 @@ const App = () => {
     id: '', name: '',url: '', description: '', requirements: '', start_date: '', finish_date: ''
   })
 
+  const [typeModal, setTypeModal] = useState(null);
+
   useEffect(() => {
     fetchScholarships()
   }, [])
@@ -56,6 +58,7 @@ const App = () => {
     .insert({ name : scholarship.name, url : scholarship.url, description : scholarship.description, requirements : scholarship.requirements, start_date : scholarship.start_date, finish_date : scholarship.finish_date})
     fetchScholarships()
     setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: ''})
+    setTypeModal(null);
   }
 
   async function deleteScholarship(scholarshipId) {
@@ -77,6 +80,7 @@ const App = () => {
 
       if(scholarship.id==scholarshipId){
         setScholarship2({ id : scholarship.id, name : scholarship.name, url : scholarship.url, description : scholarship.description, requirements : scholarship.requirements, start_date : scholarship.start_date, finish_date : scholarship.finish_date})
+        setTypeModal('editar');
       }
 
     })
@@ -98,95 +102,17 @@ const App = () => {
 
   return(
     <div>
-      <h2 className="in">Ingresar Beca</h2>
-      <form onSubmit={createScholarship}>
-        <input 
-          type="text"
-          placeholder="nombre"
-          name="name"
-          onChange={handleChange}
-          value={scholarship.name}
-         />
-        <input 
-          type="link"
-          placeholder="URL"
-          name="url"
-          onChange={handleChange}
-          value={scholarship.url}
-         />
-        <input 
-          type="text"
-          placeholder="descripción"
-          name="description"
-          onChange={handleChange}
-          value={scholarship.description} 
-        />
-        <input 
-          type="text"
-          placeholder="requisitos"
-          name="requirements"
-          onChange={handleChange}
-          value={scholarship.requirements} 
-        />
-        <input 
-          type="date"
-          name="start_date"
-          onChange={handleChange}
-          value={scholarship.start_date} 
-        />
-        <input 
-          type="date"
-          name="finish_date"
-          onChange={handleChange}
-          value={scholarship.finish_date} 
-        />
-        <button type='Submit'>Publicar</button>
-      </form>
-      <h2 className="edit">Editar Beca</h2>
-      <form onSubmit={()=>updateScholarship(scholarship2.id)}>
-        <input 
-          type="text"
-          name="name"
-          onChange={handleChange2}
-          defaultValue={scholarship2.name}
-         />
-        <input 
-          type="link"
-          name="url"
-          onChange={handleChange2}
-          defaultValue={scholarship2.url}
-         />
-        <input 
-          type="text"
-          name="description"
-          onChange={handleChange2}
-          defaultValue={scholarship2.description} 
-        />
-        <input 
-          type="text"
-          name="requirements"
-          onChange={handleChange2}
-          defaultValue={scholarship2.requirements} 
-        />
-        <input 
-          type="date"
-          name="start_date"
-          onChange={handleChange2}
-          defaultValue={scholarship2.start_date} 
-        />
-        <input 
-          type="date"
-          name="finish_date"
-          onChange={handleChange2}
-          defaultValue={scholarship2.finish_date} 
-        />
-        <button type='Submit'>Actualizar</button>
-      </form>      
-      
       <div className="cards">
+        <div 
+          onClick={() => setTypeModal('crear')} 
+          className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-gray-50 transition-all h-64"
+        >
+          <span className="text-4xl text-gray-400">+</span>
+        </div> 
+
         {scholarships.map((scholarship)=>
           <div key={scholarship.name} className="card">
-            <div className="bg-blue-600 p-4">
+            <div className="bg-purple-600 p-4">
               <h3 className="text-xl font-bold text-white truncate">
                 {scholarship.name}
               </h3>
@@ -202,18 +128,61 @@ const App = () => {
                 {scholarship.description}
               </p>
 
-              <p>
-                {scholarship.url}
-              </p>
+              <a href="">{scholarship.url}</a>
+               
+              
             </div>
             
-            <div className="flex justify-end gap-2 bg-gray-50 p-4 border-t border-gray-100">
+            <div className="flex justify-center gap-2 bg-gray-50 p-4 border-t border-gray-100">
               <button onClick={()=> deleteScholarship(scholarship.id)} className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                 Borrar
               </button>
               <button onClick={()=> displayScholarship(scholarship.id)} className="px-3 py-1.5 text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-colors">
                 Modificar
               </button>
+            </div>
+          </div>
+        )}
+
+        {typeModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-8 rounded-2xl max-w-lg w-full shadow-2xl relative">
+              <button 
+                onClick={() => setTypeModal(null)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                &times;
+              </button>
+              {typeModal === 'crear' ? (
+                <>
+                  <h2 className="text-2xl font-bold mb-4 text-gray-800 text-center">Nueva Beca</h2>
+                  <form onSubmit={createScholarship} className="flex flex-col gap-3">
+                    <input type="text" placeholder="nombre" name="name" onChange={handleChange} value={scholarship.name} className="border p-2 rounded" />
+                    <input type="text" placeholder="url" name="url" onChange={handleChange} value={scholarship.url} className="border p-2 rounded" />
+                    <textarea placeholder="descripción" name="description" onChange={handleChange} value={scholarship.description} className="border p-2 rounded" />
+                    <div className="flex gap-2">
+                      <input type="date" name="start_date" onChange={handleChange} value={scholarship.start_date} className="border p-2 rounded w-1/2" />
+                      <input type="date" name="finish_date" onChange={handleChange} value={scholarship.finish_date} className="border p-2 rounded w-1/2" />
+                    </div>
+                    <button type="submit" className="bg-purple-600 text-white py-2 rounded-lg font-bold mt-2">Publicar</button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold mb-4 text-gray-800 text-center">Editar Beca</h2>
+                  <form 
+                    onSubmit={(e) => { e.preventDefault(); updateScholarship(scholarship2.id); setTypeModal(null); }} 
+                    className="flex flex-col gap-3"
+                  >
+                    <input type="text" name="name" onChange={handleChange2} defaultValue={scholarship2.name} className="border p-2 rounded" />
+                    <input type="text" name="url" onChange={handleChange2} defaultValue={scholarship2.url} className="border p-2 rounded" />
+                    <textarea name="description" onChange={handleChange2} defaultValue={scholarship2.description} className="border p-2 rounded" />
+                    <input type="date" name="start_date" onChange={handleChange2} defaultValue={scholarship2.start_date} className="border p-2 rounded" />
+                    <input type="date" name="finish_date" onChange={handleChange2} defaultValue={scholarship2.finish_date} className="border p-2 rounded" />
+                    <button type="submit" className="bg-purple-600 text-white py-2 rounded-lg font-bold mt-2">Guardar Cambios</button>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         )}
