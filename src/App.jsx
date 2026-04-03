@@ -7,11 +7,11 @@ const App = () => {
   const [scholarships, setScholarships]=useState([])
 
   const [scholarship, setScholarship]=useState({
-    name: '', url: '', description: '', requirements: '', start_date: '', finish_date: ''
+    name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', location: ''
   })
 
   const [scholarship2, setScholarship2]=useState({
-    id: '', name: '',url: '', description: '', requirements: '', start_date: '', finish_date: ''
+    id: '', name: '',url: '', description: '', requirements: '', start_date: '', finish_date: '', location: ''
   })
 
   const [typeModal, setTypeModal] = useState(null);
@@ -55,9 +55,9 @@ const App = () => {
     event.preventDefault()
     await supabase
     .from('scholarships')
-    .insert({ name : scholarship.name, url : scholarship.url, description : scholarship.description, requirements : scholarship.requirements, start_date : scholarship.start_date, finish_date : scholarship.finish_date})
+    .insert({ name : scholarship.name, url : scholarship.url, description : scholarship.description, requirements : scholarship.requirements, start_date : scholarship.start_date, finish_date : scholarship.finish_date, location : scholarship.location})
     fetchScholarships()
-    setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: ''})
+    setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', location: ''})
     setTypeModal(null);
   }
 
@@ -79,7 +79,7 @@ const App = () => {
     scholarships.map((scholarship)=>{
 
       if(scholarship.id==scholarshipId){
-        setScholarship2({ id : scholarship.id, name : scholarship.name, url : scholarship.url, description : scholarship.description, requirements : scholarship.requirements, start_date : scholarship.start_date, finish_date : scholarship.finish_date})
+        setScholarship2({ id : scholarship.id, name : scholarship.name, url : scholarship.url, description : scholarship.description, requirements : scholarship.requirements, start_date : scholarship.start_date, finish_date : scholarship.finish_date, location : scholarship.location})
         setTypeModal('editar');
       }
 
@@ -89,7 +89,7 @@ const App = () => {
   async function updateScholarship(scholarshipId){
     const { data, error } = await supabase
       .from('scholarships')
-      .update({id : scholarship2.id, name : scholarship2.name, url : scholarship2.url, description : scholarship2.description, requirements : scholarship2.requirements, start_date : scholarship2.start_date, finish_date : scholarship2.finish_date})
+      .update({id : scholarship2.id, name : scholarship2.name, url : scholarship2.url, description : scholarship2.description, requirements : scholarship2.requirements, start_date : scholarship2.start_date, finish_date : scholarship2.finish_date, location : scholarship2.location})
       .eq('id', scholarshipId)
 
     if (error) {
@@ -126,6 +126,10 @@ const App = () => {
               
               <p className="text-gray-700 text-sm line-clamp-3">
                 {scholarship.description}
+              </p>
+
+              <p className="text-gray-700 text-sm line-clamp-3">
+                {scholarship.location}
               </p>
 
               <a 
@@ -167,6 +171,7 @@ const App = () => {
                     <input type="text" placeholder="nombre" name="name" onChange={handleChange} value={scholarship.name} className="border p-2 rounded" />
                     <input type="text" placeholder="url" name="url" onChange={handleChange} value={scholarship.url} className="border p-2 rounded" />
                     <textarea placeholder="descripción" name="description" onChange={handleChange} value={scholarship.description} className="border p-2 rounded" />
+                    <input type="text" placeholder="lugar" name="location" onChange={handleChange} value={scholarship.location} className="border p-2 rounded" />
                     <div className="flex gap-2">
                       <input type="date" name="start_date" onChange={handleChange} value={scholarship.start_date} className="border p-2 rounded w-1/2" />
                       <input type="date" name="finish_date" onChange={handleChange} value={scholarship.finish_date} className="border p-2 rounded w-1/2" />
@@ -184,6 +189,7 @@ const App = () => {
                     <input type="text" name="name" onChange={handleChange2} defaultValue={scholarship2.name} className="border p-2 rounded" />
                     <input type="text" name="url" onChange={handleChange2} defaultValue={scholarship2.url} className="border p-2 rounded" />
                     <textarea name="description" onChange={handleChange2} defaultValue={scholarship2.description} className="border p-2 rounded" />
+                    <input type="text" name="location" onChange={handleChange2} defaultValue={scholarship2.location} className="border p-2 rounded" />
                     <input type="date" name="start_date" onChange={handleChange2} defaultValue={scholarship2.start_date} className="border p-2 rounded" />
                     <input type="date" name="finish_date" onChange={handleChange2} defaultValue={scholarship2.finish_date} className="border p-2 rounded" />
                     <button type="submit" className="bg-purple-600 text-white py-2 rounded-lg font-bold mt-2">Guardar Cambios</button>
