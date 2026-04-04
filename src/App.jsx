@@ -4,17 +4,19 @@ import './App.css';
 
 const App = () => {
 
-  const [scholarships, setScholarships]=useState([])
+  const [scholarships, setScholarships]=useState([]);
 
   const [scholarship, setScholarship]=useState({
-    name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', location: ''
-  })
+    name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', location: '', image_url: ''
+  });
 
   const [scholarship2, setScholarship2]=useState({
-    id: '', name: '',url: '', description: '', requirements: '', start_date: '', finish_date: '', location: ''
-  })
+    id: '', name: '',url: '', description: '', requirements: '', start_date: '', finish_date: '', location: '', image_url: ''
+  });
 
   const [typeModal, setTypeModal] = useState(null);
+
+  const [file, setFile] = useState(null);
 
   useEffect(() => {
     fetchScholarships()
@@ -52,53 +54,116 @@ const App = () => {
   }
 
   async function createScholarship(event){
-    event.preventDefault()
-    await supabase
-    .from('scholarships')
-    .insert({ name : scholarship.name, url : scholarship.url, description : scholarship.description, requirements : scholarship.requirements, start_date : scholarship.start_date, finish_date : scholarship.finish_date, location : scholarship.location})
-    fetchScholarships()
-    setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', location: ''})
-    setTypeModal(null);
-  }
+      event.preventDefault();
+      let imageUrl = '';
 
-  async function deleteScholarship(scholarshipId) {
-    const { data, error } = await supabase
-      .from('scholarships')
-      .delete()
-      .eq('id', scholarshipId)
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('scholarships')
+          .upload(fileName, file);
 
-    if (error) {
-      console.log("Error trying delete:", error)
-    } else {
-      console.log("Scholarship has been eliminated:", data)
-      fetchScholarships()
-    }    
-  }
-
-  async function displayScholarship(scholarshipId) {
-    scholarships.map((scholarship)=>{
-
-      if(scholarship.id==scholarshipId){
-        setScholarship2({ id : scholarship.id, name : scholarship.name, url : scholarship.url, description : scholarship.description, requirements : scholarship.requirements, start_date : scholarship.start_date, finish_date : scholarship.finish_date, location : scholarship.location})
-        setTypeModal('editar');
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from('scholarships')
+            .getPublicUrl(fileName);
+          imageUrl = publicUrlData.publicUrl;
+        } else {
+          console.log("Error subiendo imagen:", uploadError);
+        }
       }
 
-    })
+      await supabase
+      .from('scholarships')
+      .insert({ 
+        name: scholarship.name, 
+        url: scholarship.url, 
+        description: scholarship.description, 
+        requirements: scholarship.requirements, 
+        start_date: scholarship.start_date, 
+        finish_date: scholarship.finish_date, 
+        location: scholarship.location,
+        image_url: imageUrl
+      });
+      
+      fetchScholarships();
+      setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', location: '', image_url: ''});
+      setTypeModal(null);
+      setFile(null);
+    }
+
+  async function deleteScholarship(id, imageUrl) {
+      if (imageUrl) {
+        const fileName = imageUrl.split('/').pop();
+        await supabase.storage.from('scholarships').remove([fileName]);
+      }
+
+      const { data, error } = await supabase
+        .from('scholarships')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.log("Error trying delete:", error);
+      } else {
+        console.log("Scholarship has been eliminated:", data);
+        fetchScholarships();
+      }    
+    }
+
+async function displayScholarship(scholarshipId) {
+    scholarships.map((scholarship) => {
+      if(scholarship.id == scholarshipId){
+        setScholarship2({ 
+          id: scholarship.id, name: scholarship.name, url: scholarship.url, 
+          description: scholarship.description, requirements: scholarship.requirements, 
+          start_date: scholarship.start_date, finish_date: scholarship.finish_date, 
+          location: scholarship.location, image_url: scholarship.image_url 
+        });
+        setTypeModal('editar');
+      }
+    });
   }
 
   async function updateScholarship(scholarshipId){
-    const { data, error } = await supabase
-      .from('scholarships')
-      .update({id : scholarship2.id, name : scholarship2.name, url : scholarship2.url, description : scholarship2.description, requirements : scholarship2.requirements, start_date : scholarship2.start_date, finish_date : scholarship2.finish_date, location : scholarship2.location})
-      .eq('id', scholarshipId)
+      let imageUrl = scholarship2.image_url;
 
-    if (error) {
-      console.log("Error trying update:", error)
-    } else {
-      console.log("Scholarships has been updated:", data)
-      fetchScholarships()
-    }        
-  }
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('scholarships')
+          .upload(fileName, file);
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from('scholarships')
+            .getPublicUrl(fileName);
+          imageUrl = publicUrlData.publicUrl;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('scholarships')
+        .update({
+          name: scholarship2.name, url: scholarship2.url, description: scholarship2.description, 
+          requirements: scholarship2.requirements, start_date: scholarship2.start_date, 
+          finish_date: scholarship2.finish_date, location: scholarship2.location, 
+          image_url: imageUrl
+        })
+        .eq('id', scholarshipId);
+
+      if (error) {
+        console.log("Error trying update:", error);
+      } else {
+        console.log("Scholarships has been updated:", data);
+        fetchScholarships();
+        setFile(null);
+      }        
+    }
 
   return(
     <div>
@@ -117,6 +182,13 @@ const App = () => {
                 {scholarship.name}
               </h3>
             </div>  
+
+            {scholarship.image_url && (
+              <img 
+              src={scholarship.image_url} 
+              className="h-48 object-contain rounded"
+              />
+              )}
 
             <div className="flex flex-col gap-3 p-4">
               <div className="flex justify-between text-sm text-gray-500 font-medium">
@@ -145,10 +217,10 @@ const App = () => {
             </div>
             
             <div className="flex justify-center gap-2 bg-gray-50 p-4 border-t border-gray-100">
-              <button onClick={()=> deleteScholarship(scholarship.id)} className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+              <button onClick={()=> deleteScholarship(scholarship.id, scholarship.image_url)} className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                 Borrar
               </button>
-              <button onClick={()=> displayScholarship(scholarship.id)} className="px-3 py-1.5 text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-colors">
+              <button onClick={()=> displayScholarship(scholarship.id)} className="px-3 py-1.5 text-sm font-medium bg-green-100 text-green-600 hover:bg-green-200 rounded-lg transition-colors">
                 Modificar
               </button>
             </div>
@@ -169,6 +241,7 @@ const App = () => {
                   <h2 className="text-2xl font-bold mb-4 text-gray-800 text-center">Nueva Beca</h2>
                   <form onSubmit={createScholarship} className="flex flex-col gap-3">
                     <input type="text" placeholder="nombre" name="name" onChange={handleChange} value={scholarship.name} className="border p-2 rounded" />
+                    <input type="file" onChange={(e) => setFile(e.target.files[0])} name="image" className="px-3 py-1.5 text-sm font-medium bg-green-100 text-green-600 hover:bg-green-200 rounded-lg transition-colors"/>
                     <input type="text" placeholder="url" name="url" onChange={handleChange} value={scholarship.url} className="border p-2 rounded" />
                     <textarea placeholder="descripción" name="description" onChange={handleChange} value={scholarship.description} className="border p-2 rounded" />
                     <input type="text" placeholder="lugar" name="location" onChange={handleChange} value={scholarship.location} className="border p-2 rounded" />
@@ -187,6 +260,19 @@ const App = () => {
                     className="flex flex-col gap-3"
                   >
                     <input type="text" name="name" onChange={handleChange2} defaultValue={scholarship2.name} className="border p-2 rounded" />
+                    
+                    {scholarship2.image_url && (
+                      <div className="flex flex-col items-center bg-gray-50 p-2 rounded border border-gray-200">
+                        <span className="text-xs text-gray-500 mb-2">Imagen actual:</span>
+                        <img 
+                          src={scholarship2.image_url} 
+                          alt="Previsualización" 
+                          className="h-32 object-contain rounded"
+                        />
+                      </div>
+                    )}
+
+                    <input type="file" onChange={(e) => setFile(e.target.files[0])} name="image" className="px-3 py-1.5 text-sm font-medium bg-green-100 text-green-600 hover:bg-green-200 rounded-lg transition-colors" />
                     <input type="text" name="url" onChange={handleChange2} defaultValue={scholarship2.url} className="border p-2 rounded" />
                     <textarea name="description" onChange={handleChange2} defaultValue={scholarship2.description} className="border p-2 rounded" />
                     <input type="text" name="location" onChange={handleChange2} defaultValue={scholarship2.location} className="border p-2 rounded" />
