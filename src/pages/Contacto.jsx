@@ -1,10 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { supabase } from "../createClient";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { User, Mail, MessageSquare, Bot, Send, CheckCircle2, Loader2, AlertTriangle, Sparkles } from "lucide-react";
-
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const Contacto = () => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -42,46 +38,110 @@ const Contacto = () => {
     }
   };
 
-  const handleSendChat = async (e) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-    if (!genAI) {
-      setChatError("Falta la API Key de Gemini en las variables de entorno.");
-      return;
-    }
+const handleSendChat = async (e) => {
+  e.preventDefault();
+  if (!chatInput.trim()) return;
 
-    const userText = chatInput.trim();
-    const newMessages = [...chatMessages, { role: 'user', text: userText }];
-    
-    setChatMessages(newMessages);
-    setChatInput("");
-    setIsTyping(true);
-    setChatError(null);
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    setChatError("Falta la API Key en el archivo .env");
+    return;
+  }
 
-    try {
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: "Eres unIA, el Orientador Vocacional oficial de la plataforma educativa colombiana UniAcceso. Tu tono debe ser empático, motivador, joven y profesional. Tu único trabajo es guiar a los estudiantes en Colombia para descubrir carreras universitarias que se ajusten a sus gustos, habilidades y debilidades. Sé breve (máximo 2 párrafos por respuesta). Menciona carreras reales y áreas de estudio. Si te preguntan algo que NO sea de educación, orientación vocacional o universidades, responde amablemente que tu función exclusiva es la orientación educativa."
+  const userText = chatInput.trim();
+  const newMessages = [...chatMessages, { role: 'user', text: userText }];
+
+  setChatMessages(newMessages);
+  setChatInput("");
+  setIsTyping(true);
+  setChatError(null);
+
+  try {
+    const systemTurn = [
+      {
+        role: 'user',
+        parts: [{ text: `INSTRUCCIÓN DEL SISTEMA: Eres unIA, el Orientador Vocacional oficial 
+de UniAcceso, plataforma educativa latinoamericana. Tu tono es empático, motivador, joven y 
+profesional. Tu único trabajo es guiar estudiantes en Colombia y Latinoamérica para descubrir 
+carreras universitarias según sus gustos y habilidades. Sé breve (máximo 2 párrafos). 
+Menciona carreras y áreas reales. Si te preguntan algo fuera de educación u orientación 
+vocacional, responde amablemente que solo puedes ayudar con eso.` }]
+      },
+      {
+        role: 'model',
+        parts: [{ text: "Entendido. Soy unIA, orientador de UniAcceso. Listo para ayudar." }]
+      }
+    ];
+
+    const conversationHistory = [];
+    for (let i = 1; i < newMessages.length; i++) {
+      conversationHistory.push({
+        role: newMessages[i].role === 'user' ? 'user' : 'model',
+        parts: [{ text: newMessages[i].text }]
       });
-
-      const history = chatMessages.slice(1).map(msg => ({
-        role: msg.role,
-        parts: [{ text: msg.text }]
-      }));
-
-      const chat = model.startChat({ history });
-      const result = await chat.sendMessage(userText);
-      const botResponse = result.response.text();
-
-      setChatMessages(prev => [...prev, { role: 'model', text: botResponse }]);
-
-    } catch (error) {
-      console.error("Error unIA:", error);
-      setChatError("Error detallado: " + error.message);
-    } finally {
-      setIsTyping(false);
     }
-  };
+
+    if (
+      conversationHistory.length === 0 ||
+      conversationHistory[conversationHistory.length - 1].role !== 'user'
+    ) {
+      throw new Error("El último mensaje debe ser del usuario.");
+    }
+
+    const payload = {
+      contents: [...systemTurn, ...conversationHistory]
+    };
+
+    const modelsToTry = [
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-2.0-flash-lite",
+    ];
+
+    let botResponse = null;
+    let lastErrorMessage = "";
+
+    for (const model of modelsToTry) {
+      try {
+        console.log(`Intentando con: ${model}...`);
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          botResponse = data.candidates[0].content.parts[0].text;
+          console.log(`✅ Éxito con: ${model}`);
+          break;
+        } else {
+          lastErrorMessage = data.error?.message || `Sin respuesta válida en ${model}`;
+          console.warn(`❌ Falló ${model}:`, lastErrorMessage);
+        }
+      } catch (err) {
+        lastErrorMessage = err.message;
+        console.warn(`❌ Error de red con ${model}:`, err.message);
+      }
+    }
+
+    if (!botResponse) {
+      throw new Error(lastErrorMessage || "Ningún modelo respondió correctamente.");
+    }
+
+    setChatMessages(prev => [...prev, { role: 'model', text: botResponse }]);
+
+  } catch (error) {
+    console.error("Error unIA:", error);
+    setChatError("Error: " + error.message);
+  } finally {
+    setIsTyping(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-white flex flex-col pt-16">
