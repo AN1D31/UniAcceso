@@ -1,24 +1,57 @@
 import React, { useState, useRef, useEffect } from "react";
 import { supabase } from "../createClient";
 import { User, Mail, MessageSquare, Bot, Send, CheckCircle2, Loader2, AlertTriangle, Sparkles } from "lucide-react";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const Contacto = () => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ type: null, text: '' });
 
-  const [chatMessages, setChatMessages] = useState([
-    { role: 'model', text: '¡Hola! Soy unIA, tu Orientador Vocacional de UniAcceso. 🎓 ¿Qué materias te gustan más o cuáles son tus intereses principales?' }
-  ]);
+  const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [chatError, setChatError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-  useEffect(() => { scrollToBottom(); }, [chatMessages, isTyping]);
+
+  useEffect(() => { 
+    scrollToBottom(); 
+  }, [chatMessages, isTyping]);
+
+  useEffect(() => {
+    const initChat = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        setCurrentUser(session.user);
+        
+        const { data, error } = await supabase
+          .from('chat_history')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          const formattedHistory = data.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            text: msg.content
+          }));
+          setChatMessages(formattedHistory);
+        } else {
+          setChatMessages([{ role: 'model', text: '¡Hola! Soy unIA, tu Orientador Vocacional de UniAcceso. 🎓 ¿Qué materias te gustan más o cuáles son tus intereses principales?' }]);
+        }
+      } else {
+        setChatMessages([{ role: 'model', text: '¡Hola! Soy unIA, tu Orientador Vocacional de UniAcceso. 🎓 ¿Qué materias te gustan más o cuáles son tus intereses principales?' }]);
+      }
+    };
+    initChat();
+  }, []);
 
   const handleContactSubmit = async (e) => {
     e.preventDefault();
@@ -43,97 +76,70 @@ const handleSendChat = async (e) => {
   if (!chatInput.trim()) return;
 
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    setChatError("Falta la API Key en el archivo .env");
-    return;
-  }
-
   const userText = chatInput.trim();
-  const newMessages = [...chatMessages, { role: 'user', text: userText }];
-
-  setChatMessages(newMessages);
+  
+  setChatMessages(prev => [...prev, { role: 'user', text: userText }]);
   setChatInput("");
   setIsTyping(true);
   setChatError(null);
 
+  // 1. Guardar mensaje del usuario en el historial
+  if (currentUser) {
+    supabase.from('chat_history').insert({
+      user_id: currentUser.id,
+      role: 'user',
+      content: userText
+    }).then();
+  }
+
   try {
-    const systemTurn = [
-      {
-        role: 'user',
-        parts: [{ text: `INSTRUCCIÓN DEL SISTEMA: Eres unIA, el Orientador Vocacional oficial 
-de UniAcceso, plataforma educativa latinoamericana. Tu tono es empático, motivador, joven y 
-profesional. Tu único trabajo es guiar estudiantes en Colombia y Latinoamérica para descubrir 
-carreras universitarias según sus gustos y habilidades. Sé breve (máximo 2 párrafos). 
-Menciona carreras y áreas reales. Si te preguntan algo fuera de educación u orientación 
-vocacional, responde amablemente que solo puedes ayudar con eso.` }]
-      },
-      {
-        role: 'model',
-        parts: [{ text: "Entendido. Soy unIA, orientador de UniAcceso. Listo para ayudar." }]
-      }
-    ];
+    // --- PASO CLAVE: BÚSQUEDA DE CONTEXTO (RAG) ---
+    // Buscamos en la base de datos si el usuario menciona algo relevante
+    let contextData = "";
+    
+    // Consultamos programas o universidades que coincidan con palabras del usuario
+    const { data: dbContext } = await supabase
+      .from('programs')
+      .select('name, level, modality, duration, universities(name)')
+      .ilike('name', `%${userText.split(' ')[0]}%`) // Busca por la primera palabra clave
+      .limit(5);
 
-    const conversationHistory = [];
-    for (let i = 1; i < newMessages.length; i++) {
-      conversationHistory.push({
-        role: newMessages[i].role === 'user' ? 'user' : 'model',
-        parts: [{ text: newMessages[i].text }]
-      });
+    if (dbContext && dbContext.length > 0) {
+      contextData = "CONTEXTO DE LA BASE DE DATOS DE UNIACCESO:\n" + 
+        dbContext.map(p => `- Programa: ${p.name}, Nivel: ${p.level}, Modalidad: ${p.modality}, Duración: ${p.duration} semestres en la institución ${p.universities?.name}`).join('\n');
     }
+    // ----------------------------------------------
 
-    if (
-      conversationHistory.length === 0 ||
-      conversationHistory[conversationHistory.length - 1].role !== 'user'
-    ) {
-      throw new Error("El último mensaje debe ser del usuario.");
-    }
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      systemInstruction: `Eres unIA, el Orientador Vocacional oficial de UniAcceso. 
+      Usa el siguiente contexto de nuestra base de datos para responder si es relevante. 
+      Si el contexto no contiene la respuesta, usa tu conocimiento general pero prioriza siempre los datos de UniAcceso.
+      
+      ${contextData}`
+    });
 
-    const payload = {
-      contents: [...systemTurn, ...conversationHistory]
-    };
+    const historyForGemini = chatMessages
+      .filter(msg => msg.text !== '¡Hola! Soy unIA, tu Orientador Vocacional de UniAcceso. 🎓 ¿Qué materias te gustan más o cuáles son tus intereses principales?')
+      .map(msg => ({
+        role: msg.role,
+        parts: [{ text: msg.text }],
+      }));
 
-    const modelsToTry = [
-      "gemini-2.5-flash",
-      "gemini-2.0-flash",
-      "gemini-2.0-flash-lite",
-    ];
-
-    let botResponse = null;
-    let lastErrorMessage = "";
-
-    for (const model of modelsToTry) {
-      try {
-        console.log(`Intentando con: ${model}...`);
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          }
-        );
-
-        const data = await response.json();
-
-        if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-          botResponse = data.candidates[0].content.parts[0].text;
-          console.log(`✅ Éxito con: ${model}`);
-          break;
-        } else {
-          lastErrorMessage = data.error?.message || `Sin respuesta válida en ${model}`;
-          console.warn(`❌ Falló ${model}:`, lastErrorMessage);
-        }
-      } catch (err) {
-        lastErrorMessage = err.message;
-        console.warn(`❌ Error de red con ${model}:`, err.message);
-      }
-    }
-
-    if (!botResponse) {
-      throw new Error(lastErrorMessage || "Ningún modelo respondió correctamente.");
-    }
+    const chat = model.startChat({ history: historyForGemini });
+    const result = await chat.sendMessage(userText);
+    const botResponse = result.response.text();
 
     setChatMessages(prev => [...prev, { role: 'model', text: botResponse }]);
+
+    if (currentUser) {
+      supabase.from('chat_history').insert({
+        user_id: currentUser.id,
+        role: 'assistant',
+        content: botResponse
+      }).then();
+    }
 
   } catch (error) {
     console.error("Error unIA:", error);

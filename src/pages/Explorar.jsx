@@ -4,6 +4,7 @@ import { GraduationCap, Star, Trophy, Sparkles, Search, Edit, Trash2 } from "luc
 import FilterSection from "../components/FilterSection";
 import Results from "../components/Results";
 import AdminAddButton from "../components/AdminAddButton";
+import UniversityDetailModal from "../components/UniversityDetailModal";
 
 const ExplorarPage = () => {
   const [universities, setUniversities] = useState([]);
@@ -15,6 +16,7 @@ const ExplorarPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [typeModal, setTypeModal] = useState(null); 
   const [file, setFile] = useState(null);
+  const [selectedUniversity, setSelectedUniversity] = useState(null);
   
   const [formData, setFormData] = useState({
     id: '', name: '', description: '', department: '', careers: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: ''
@@ -162,8 +164,7 @@ const ExplorarPage = () => {
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <main className="min-h-screen bg-white pt-10 pb-20 px-4 sm:px-6">
-
+    <main className="min-h-screen bg-white pt-10 pb-20 px-4 sm:px-6 relative">
       <div className="max-w-7xl mx-auto text-center mb-14 mt-6">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700 font-bold text-sm mb-4 shadow-sm border border-purple-200">
           <Sparkles className="w-4 h-4" /> <span>Top Universidades</span>
@@ -174,7 +175,6 @@ const ExplorarPage = () => {
       </div>
 
       <section className="max-w-7xl mx-auto grid gap-8 sm:grid-cols-2 lg:grid-cols-3 mb-24">
-        
         {isAdmin && (
           <div className="h-full">
             <AdminAddButton 
@@ -209,6 +209,15 @@ const ExplorarPage = () => {
                 <Star className="w-6 h-6 text-gray-200 group-hover:text-yellow-400 transition-colors drop-shadow-sm" />
               </div>
               
+              <div className="mt-auto flex flex-col gap-2 w-full mb-4">
+                <button
+                  onClick={() => setSelectedUniversity(uni)}
+                  className="flex items-center justify-center w-full py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white font-bold rounded-xl transition-all duration-300 shadow-sm border border-emerald-100"
+                >
+                  Ver oferta y detalles
+                </button>
+              </div>
+
               {isAdmin && (
                 <div className="flex justify-between gap-3 pt-4 border-t border-purple-100 mt-auto">
                   <button onClick={() => deleteUniversity(uni.id, uni.imagen)} className="flex items-center justify-center w-1/2 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-lg transition-colors">
@@ -250,6 +259,7 @@ const ExplorarPage = () => {
                 isAdmin={isAdmin}
                 onEdit={displayUniversityForEdit}
                 onDelete={deleteUniversity}
+                onViewDetails={(uni) => setSelectedUniversity(uni)}
               />
             </div>
           </div>
@@ -305,6 +315,11 @@ const ExplorarPage = () => {
         </div>
       )}
 
+      <UniversityDetailModal 
+        isOpen={selectedUniversity !== null} 
+        onClose={() => setSelectedUniversity(null)} 
+        university={selectedUniversity} 
+      />
     </main>
   );
 };
