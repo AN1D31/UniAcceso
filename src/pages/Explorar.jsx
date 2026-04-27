@@ -7,7 +7,7 @@ import AdminAddButton from "../components/AdminAddButton";
 
 const ExplorarPage = () => {
   const [universities, setUniversities] = useState([]);
-  const [filters, setFilters] = useState({ nombre: "", departamento: "", carrera: "", nivel: "", tipo: "" });
+  const [filters, setFilters] = useState({ nombre: "", departamento: "", nivel: "", tipo: "" });
   const [filteredData, setFilteredData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasSearched, setHasSearched] = useState(false);
@@ -17,7 +17,7 @@ const ExplorarPage = () => {
   const [file, setFile] = useState(null);
   
   const [formData, setFormData] = useState({
-    id: '', name: '', description: '', department: '', careers: '', level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: ''
+    id: '', name: '', description: '', department: '', careers: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: ''
   });
 
   const itemsPerPage = 6;
@@ -40,10 +40,12 @@ const ExplorarPage = () => {
     if (!error && data) {
       const mapped = data.map(uni => ({
         id: uni.id, nombre: uni.name, descripcion: uni.description, departamento: uni.department,
-        carreras: uni.careers || [], nivel: uni.level, tipo: uni.type, ranking: uni.ranking,
-        tags: uni.tags || [], imagen: uni.image_url, url: uni.url, is_top: uni.is_top
+        carreras: uni.careers || 0,
+        nivel: uni.level, tipo: uni.type, ranking: uni.ranking,
+        tags: uni.tags || '', imagen: uni.image_url, url: uni.url, is_top: uni.is_top
       }));
       setUniversities(mapped);
+      setFilteredData(mapped);
     }
   }
 
@@ -61,25 +63,40 @@ const ExplorarPage = () => {
       }
     }
 
-    const careersArray = formData.careers.split(',').map(c => c.trim());
-    const tagsArray = formData.tags.split(',').map(t => t.trim());
-
     const universityData = {
-      name: formData.name, description: formData.description, department: formData.department,
-      careers: careersArray, level: formData.level, type: formData.type, ranking: formData.ranking,
-      tags: tagsArray, url: formData.url, is_top: formData.is_top, image_url: imageUrl
+      name: formData.name,
+      description: formData.description,
+      department: formData.department,
+      careers: parseInt(formData.careers) || 0,
+      level: formData.level,
+      type: formData.type,
+      ranking: formData.ranking,
+      tags: typeof formData.tags === 'string' 
+            ? formData.tags.split(',').map(t => t.trim()).filter(t => t !== "") 
+            : formData.tags,
+      url: formData.url,
+      is_top: formData.is_top,
+      image_url: imageUrl
     };
 
+    let error;
     if (typeModal === 'crear') {
-      await supabase.from('universities').insert(universityData);
+      const { error: insertError } = await supabase.from('universities').insert(universityData);
+      error = insertError;
     } else if (typeModal === 'editar') {
-      await supabase.from('universities').update(universityData).eq('id', formData.id);
+      const { error: updateError } = await supabase.from('universities').update(universityData).eq('id', Number(formData.id));
+      error = updateError;
     }
 
-    fetchUniversities();
-    setTypeModal(null);
-    setFile(null);
-    setFormData({ id: '', name: '', description: '', department: '', careers: '', level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: '' });
+    if (error) {
+      console.error("Error al guardar:", error.message);
+      alert("No se pudo actualizar: " + error.message);
+    } else {
+      fetchUniversities();
+      setTypeModal(null);
+      setFile(null);
+      setFormData({ id: '', name: '', description: '', department: '', careers: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: '' });
+    }
   };
 
   const deleteUniversity = async (id, imageUrl) => {
@@ -95,39 +112,49 @@ const ExplorarPage = () => {
   };
 
   const displayUniversityForEdit = (uni) => {
+    let validUrl = uni.url || "";
+    if (validUrl && !validUrl.startsWith("http://") && !validUrl.startsWith("https://")) {
+      validUrl = `https://${validUrl.trim()}`;
+    }
+
     setFormData({
-      id: uni.id, name: uni.nombre, description: uni.descripcion, department: uni.departamento,
-      careers: uni.carreras.join(', '), level: uni.nivel, type: uni.tipo, ranking: uni.ranking || '',
-      tags: uni.tags.join(', '), url: uni.url, is_top: uni.is_top, image_url: uni.imagen
+      id: uni.id,
+      name: uni.nombre,
+      description: uni.descripcion,
+      department: uni.departamento,
+      careers: uni.carreras,
+      level: uni.nivel,
+      type: uni.tipo,
+      ranking: uni.ranking || '',
+      tags: Array.isArray(uni.tags) ? uni.tags.join(', ') : (uni.tags || ''),
+      url: validUrl,
+      is_top: uni.is_top,
+      image_url: uni.imagen
     });
     setTypeModal('editar');
   };
 
   const handleResetFilters = () => {
-    setFilters({ nombre: "", departamento: "", carrera: "", nivel: "", tipo: "" });
-    setFilteredData([]);
-    setHasSearched(false);
-    setCurrentPage(1);
+    setFilters({ nombre: "", departamento: "", nivel: "", tipo: "" });
   };
 
   useEffect(() => {
     const isAnyFilterFilled = Object.values(filters).some((value) => value.trim() !== "");
     if (!isAnyFilterFilled) {
-      setFilteredData([]);
+      setFilteredData(universities);
       setHasSearched(false);
     } else {
       const results = universities.filter((uni) => {
         const nombreMatch = uni.nombre.toLowerCase().includes(filters.nombre.toLowerCase());
         const deptoMatch = uni.departamento.toLowerCase().includes(filters.departamento.toLowerCase());
-        const carreraMatch = filters.carrera === "" || uni.carreras.some((c) => c.toLowerCase().includes(filters.carrera.toLowerCase()));
-        const nivelMatch = filters.nivel === "" || uni.nivel.toLowerCase() === filters.nivel.toLowerCase();
-        const tipoMatch = filters.tipo === "" || uni.tipo.toLowerCase() === filters.tipo.toLowerCase();
-        return nombreMatch && deptoMatch && carreraMatch && nivelMatch && tipoMatch;
+        const nivelMatch = filters.nivel === "" || (uni.nivel && uni.nivel.toLowerCase() === filters.nivel.toLowerCase());
+        const tipoMatch = filters.tipo === "" || (uni.tipo && uni.tipo.toLowerCase() === filters.tipo.toLowerCase());
+        return nombreMatch && deptoMatch && nivelMatch && tipoMatch;
       });
       setFilteredData(results);
-      setCurrentPage(1);
       setHasSearched(true);
     }
+    setCurrentPage(1);
   }, [filters, universities]);
 
   const topUniversities = universities.filter(u => u.is_top);
@@ -152,7 +179,7 @@ const ExplorarPage = () => {
           <div className="h-full">
             <AdminAddButton 
               onClick={() => {
-                setFormData({ id: '', name: '', description: '', department: '', careers: '', level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: '' });
+                setFormData({ id: '', name: '', description: '', department: '', careers: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: '' });
                 setTypeModal('crear');
               }} 
               label="Registrar Universidad" 
@@ -165,7 +192,7 @@ const ExplorarPage = () => {
           <div key={uni.id} className="relative h-full bg-white rounded-3xl shadow-lg hover:shadow-2xl hover:shadow-purple-500/20 overflow-hidden border border-purple-100 transform transition-all duration-300 hover:-translate-y-2 flex flex-col group outline-none">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-linear-to-r from-purple-500 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"></div>
             <div className="h-48 w-full bg-white flex items-center justify-center p-8 border-b border-gray-50 relative overflow-hidden">
-              <img src={uni.imagen} alt={`Logo ${uni.nombre}`} className="max-h-full max-w-full object-contain relative z-10 drop-shadow-sm group-hover:scale-105 transition-transform duration-300" />
+              <img src={uni.imagen || "https://placehold.co/400x200/f3e8ff/7e22ce?text=Sin+Logo"} alt={`Logo ${uni.nombre}`} className="max-h-full max-w-full object-contain relative z-10 drop-shadow-sm group-hover:scale-105 transition-transform duration-300" />
             </div>
             <div className="p-8 flex flex-col grow bg-linear-to-b from-white to-purple-50/30">
               <div className="flex items-start mb-4">
@@ -258,13 +285,16 @@ const ExplorarPage = () => {
               </select>
 
               <textarea placeholder="Descripción general" rows="2" value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 resize-none" required />
-              <textarea placeholder="Carreras (Separadas por comas)" rows="2" value={formData.careers} onChange={e=>setFormData({...formData, careers: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 resize-none" required />
+              
+              <label className="col-span-2 text-sm font-bold text-purple-800">Cantidad de Programas Ofertados</label>
+              <input type="number" placeholder="Ej. 45" value={formData.careers} onChange={e=>setFormData({...formData, careers: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400" required />
+              
               <input type="text" placeholder="Etiquetas Destacadas (Ej. Pública, Ciencias)" value={formData.tags} onChange={e=>setFormData({...formData, tags: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 text-sm" />
               <input type="url" placeholder="Sitio Web Oficial" value={formData.url} onChange={e=>setFormData({...formData, url: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400" required />
               
               <label className="col-span-2 flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-200 cursor-pointer">
                 <input type="checkbox" checked={formData.is_top} onChange={e=>setFormData({...formData, is_top: e.target.checked})} className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500" />
-                <span className="font-bold text-emerald-800">¿Es Universidad Destacada? (Aparecerá en la parte superior)</span>
+                <span className="font-bold text-emerald-800">¿Es Universidad Destacada?</span>
               </label>
 
               <button type="submit" className="col-span-2 bg-linear-to-r from-purple-600 to-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-lg hover:-translate-y-0.5 transition-all mt-2">
