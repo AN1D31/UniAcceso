@@ -51,7 +51,7 @@ const ExplorarPage = () => {
     }
   }
 
-  const handleCreateOrUpdateUniversity = async (e) => {
+const handleCreateOrUpdateUniversity = async (e) => {
     e.preventDefault();
     let imageUrl = formData.image_url;
     
@@ -65,14 +65,17 @@ const ExplorarPage = () => {
       }
     }
 
-    const universityData = {
+    // Payload con tipado estricto para evitar el Error 400 Bad Request
+    const payloadLimpio = {
       name: formData.name,
       description: formData.description,
       department: formData.department,
       careers: parseInt(formData.careers) || 0,
       level: formData.level,
       type: formData.type,
-      ranking: formData.ranking,
+      // Si el ranking está vacío, pasamos null explícitamente
+      ranking: formData.ranking.trim() === "" ? null : formData.ranking,
+      // CONVERSIÓN OBLIGATORIA: Supabase espera un Array (text[]), no un string
       tags: typeof formData.tags === 'string' 
             ? formData.tags.split(',').map(t => t.trim()).filter(t => t !== "") 
             : formData.tags,
@@ -83,16 +86,18 @@ const ExplorarPage = () => {
 
     let error;
     if (typeModal === 'crear') {
-      const { error: insertError } = await supabase.from('universities').insert(universityData);
+      // Insertamos el objeto limpio (sin id)
+      const { error: insertError } = await supabase.from('universities').insert(payloadLimpio);
       error = insertError;
     } else if (typeModal === 'editar') {
-      const { error: updateError } = await supabase.from('universities').update(universityData).eq('id', Number(formData.id));
+      // Actualizamos usando el ID numérico
+      const { error: updateError } = await supabase.from('universities').update(payloadLimpio).eq('id', Number(formData.id));
       error = updateError;
     }
 
     if (error) {
       console.error("Error al guardar:", error.message);
-      alert("No se pudo actualizar: " + error.message);
+      alert("No se pudo guardar la universidad. Revisa la consola para más detalles.");
     } else {
       fetchUniversities();
       setTypeModal(null);

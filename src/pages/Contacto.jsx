@@ -83,7 +83,6 @@ const handleSendChat = async (e) => {
   setIsTyping(true);
   setChatError(null);
 
-  // 1. Guardar mensaje del usuario en el historial
   if (currentUser) {
     supabase.from('chat_history').insert({
       user_id: currentUser.id,
@@ -93,22 +92,18 @@ const handleSendChat = async (e) => {
   }
 
   try {
-    // --- PASO CLAVE: BÚSQUEDA DE CONTEXTO (RAG) ---
-    // Buscamos en la base de datos si el usuario menciona algo relevante
     let contextData = "";
     
-    // Consultamos programas o universidades que coincidan con palabras del usuario
     const { data: dbContext } = await supabase
       .from('programs')
       .select('name, level, modality, duration, universities(name)')
-      .ilike('name', `%${userText.split(' ')[0]}%`) // Busca por la primera palabra clave
+      .ilike('name', `%${userText.split(' ')[0]}%`) 
       .limit(5);
 
     if (dbContext && dbContext.length > 0) {
       contextData = "CONTEXTO DE LA BASE DE DATOS DE UNIACCESO:\n" + 
         dbContext.map(p => `- Programa: ${p.name}, Nivel: ${p.level}, Modalidad: ${p.modality}, Duración: ${p.duration} semestres en la institución ${p.universities?.name}`).join('\n');
     }
-    // ----------------------------------------------
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
