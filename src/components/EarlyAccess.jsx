@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../createClientClient'; 
+import { supabase } from '../createClient'; 
 
 export default function EarlyAccess() {
   const [nombre, setNombre] = useState('');
