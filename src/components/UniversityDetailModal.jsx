@@ -41,79 +41,77 @@ const UniversityDetailModal = ({ isOpen, onClose, university }) => {
   });
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-100 p-4 sm:p-6">
-      <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden border border-purple-100">
-        
-        <div className="absolute top-0 left-0 w-full h-2 bg-linear-to-r from-purple-500 to-emerald-400 z-10"></div>
-        
-        <button 
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-100 p-4 sm:p-6">
+      <div className="bg-white w-full max-w-4xl max-h-[90vh] flex flex-col relative overflow-hidden border border-gray-200">
+
+        <button
           onClick={onClose}
-          className="absolute top-5 right-5 w-10 h-10 bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-full flex items-center justify-center transition-colors z-20"
+          className="absolute top-5 right-5 w-10 h-10 bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-sm flex items-center justify-center transition-colors z-20"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="p-6 md:p-8 flex items-center gap-6 border-b border-purple-50 bg-linear-to-b from-purple-50/30 to-transparent shrink-0">
-          <div className="w-24 h-24 bg-white rounded-2xl shadow-sm border border-purple-100 flex items-center justify-center p-2 shrink-0">
-            <img 
-              src={university.imagen || "https://placehold.co/400x200/f3e8ff/7e22ce?text=Sin+Logo"} 
-              alt={university.nombre} 
+        <div className="p-6 md:p-8 flex items-center gap-6 border-b border-gray-200 shrink-0">
+          <div className="w-24 h-24 bg-white border border-gray-200 flex items-center justify-center p-2 shrink-0">
+            <img
+              src={university.imagen || "https://placehold.co/400x200/f3e8ff/7e22ce?text=Sin+Logo"}
+              alt={university.nombre}
               className="max-h-full max-w-full object-contain"
             />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-purple-900 leading-tight">
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-900 leading-tight">
               {university.nombre}
             </h2>
-            <p className="text-emerald-600 font-bold mt-1 text-sm md:text-base flex items-center gap-1.5">
+            <p className="text-gray-600 font-medium mt-1 text-sm md:text-base flex items-center gap-1.5">
               <MapPin className="w-4 h-4" /> {university.departamento}
             </p>
           </div>
         </div>
 
         <div className="flex px-6 md:px-8 border-b border-gray-200 shrink-0 gap-8 overflow-x-auto scrollbar-hide">
-          <button 
+          <button
             onClick={() => setActiveTab('resumen')}
-            className={`py-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'resumen' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-purple-400'}`}
+            className={`py-4 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'resumen' ? 'border-purple-700 text-purple-700' : 'border-transparent text-gray-500 hover:text-purple-600'}`}
           >
             <Info className="w-4 h-4" /> Resumen
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('programas')}
-            className={`py-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'programas' ? 'border-emerald-500 text-emerald-700' : 'border-transparent text-gray-500 hover:text-emerald-500'}`}
+            className={`py-4 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'programas' ? 'border-purple-700 text-purple-700' : 'border-transparent text-gray-500 hover:text-purple-600'}`}
           >
             <BookOpen className="w-4 h-4" /> Oferta Académica ({programs.length})
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('mision')}
-            className={`py-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'mision' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-purple-400'}`}
+            className={`py-4 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'mision' ? 'border-purple-700 text-purple-700' : 'border-transparent text-gray-500 hover:text-purple-600'}`}
           >
             <Target className="w-4 h-4" /> Misión y Visión
           </button>
         </div>
 
-        <div className="p-6 md:p-8 overflow-y-auto grow bg-gray-50/50">
-          
+        <div className="p-6 md:p-8 overflow-y-auto grow bg-white">
+
           {activeTab === 'resumen' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div className="bg-white p-6 rounded-2xl border border-purple-100 shadow-sm">
-                <h3 className="text-lg font-bold text-purple-900 mb-3">Acerca de la Institución</h3>
+            <div className="space-y-6">
+              <div className="bg-white p-6 border border-gray-200">
+                <h3 className="text-base font-semibold text-gray-900 mb-3">Acerca de la Institución</h3>
                 <p className="text-gray-700 leading-relaxed">
                   {university.descripcion || "Información general no disponible por el momento."}
                 </p>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-purple-50 shadow-sm text-center">
-                  <span className="block text-xs font-bold text-purple-400 uppercase mb-1">Nivel</span>
-                  <span className="font-extrabold text-gray-800">{university.nivel || 'N/A'}</span>
+                <div className="bg-white p-4 border border-gray-200 text-center">
+                  <span className="block text-xs font-semibold text-gray-500 uppercase mb-1">Nivel</span>
+                  <span className="font-semibold text-gray-800">{university.nivel || 'N/A'}</span>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-purple-50 shadow-sm text-center">
-                  <span className="block text-xs font-bold text-purple-400 uppercase mb-1">Sector</span>
-                  <span className="font-extrabold text-gray-800">{university.tipo || 'N/A'}</span>
+                <div className="bg-white p-4 border border-gray-200 text-center">
+                  <span className="block text-xs font-semibold text-gray-500 uppercase mb-1">Sector</span>
+                  <span className="font-semibold text-gray-800">{university.tipo || 'N/A'}</span>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-emerald-50 shadow-sm text-center col-span-2 md:col-span-2">
-                  <span className="block text-xs font-bold text-emerald-500 uppercase mb-1">Sitio Web Oficial</span>
-                  <a href={university.url} target="_blank" rel="noreferrer" className="font-extrabold text-emerald-700 hover:underline truncate block">
+                <div className="bg-white p-4 border border-gray-200 text-center col-span-2 md:col-span-2">
+                  <span className="block text-xs font-semibold text-gray-500 uppercase mb-1">Sitio Web Oficial</span>
+                  <a href={university.url} target="_blank" rel="noreferrer" className="font-semibold text-purple-700 hover:underline truncate block">
                     {university.url ? university.url.replace('https://', '') : 'No disponible'}
                   </a>
                 </div>
@@ -131,13 +129,13 @@ const UniversityDetailModal = ({ isOpen, onClose, university }) => {
                     placeholder="Buscar programa..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 text-sm"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 text-sm"
                   />
                 </div>
-                <select 
+                <select
                   value={modalityFilter}
                   onChange={(e) => setModalityFilter(e.target.value)}
-                  className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-medium"
+                  className="bg-white border border-gray-300 rounded-sm px-4 py-2.5 outline-none focus:ring-1 focus:ring-purple-600 text-sm font-medium"
                 >
                   <option value="">Todas las modalidades</option>
                   <option value="Presencial">Presencial</option>
@@ -148,25 +146,25 @@ const UniversityDetailModal = ({ isOpen, onClose, university }) => {
 
               {loading ? (
                 <div className="flex justify-center items-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
                 </div>
               ) : filteredPrograms.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-max">
                   {filteredPrograms.map(prog => (
-                    <div key={prog.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow hover:border-emerald-200 group">
-                      <h4 className="font-extrabold text-gray-800 text-sm mb-2 group-hover:text-emerald-700 transition-colors line-clamp-2" title={prog.name}>
+                    <div key={prog.id} className="bg-white p-4 border border-gray-200 hover:border-purple-300 transition-colors">
+                      <h4 className="font-semibold text-gray-800 text-sm mb-2 line-clamp-2" title={prog.name}>
                         {prog.name}
                       </h4>
                       <div className="flex items-center gap-4 text-xs font-medium text-gray-500">
-                        <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
-                          <Target className="w-3 h-3 text-purple-400" /> {prog.level}
+                        <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-sm">
+                          <Target className="w-3 h-3 text-gray-400" /> {prog.level}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Monitor className="w-3 h-3 text-blue-400" /> {prog.modality}
+                          <Monitor className="w-3 h-3 text-gray-400" /> {prog.modality}
                         </span>
                         {prog.duration > 0 && (
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-orange-400" /> {prog.duration} semestres
+                            <Clock className="w-3 h-3 text-gray-400" /> {prog.duration} semestres
                           </span>
                         )}
                       </div>
@@ -174,7 +172,7 @@ const UniversityDetailModal = ({ isOpen, onClose, university }) => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
+                <div className="text-center py-12 bg-white border border-dashed border-gray-300">
                   <BookOpen className="w-10 h-10 mx-auto text-gray-300 mb-3" />
                   <p className="text-gray-500 font-medium">No se encontraron programas que coincidan con tu búsqueda.</p>
                 </div>
@@ -183,9 +181,9 @@ const UniversityDetailModal = ({ isOpen, onClose, university }) => {
           )}
 
           {activeTab === 'mision' && (
-            <div className="bg-white p-6 rounded-2xl border border-purple-100 shadow-sm animate-in fade-in duration-300">
-              <h3 className="text-lg font-bold text-purple-900 mb-3">Misión Institucional</h3>
-              <p className="text-gray-700 leading-relaxed italic border-l-4 border-purple-300 pl-4 bg-purple-50/50 py-3 rounded-r-lg">
+            <div className="bg-white p-6 border border-gray-200">
+              <h3 className="text-base font-semibold text-gray-900 mb-3">Misión Institucional</h3>
+              <p className="text-gray-700 leading-relaxed italic border-l-4 border-gray-300 pl-4 bg-gray-50 py-3">
                 Esta institución no ha proporcionado una misión específica en los registros de datos abiertos actuales.
               </p>
             </div>

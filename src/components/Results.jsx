@@ -42,7 +42,7 @@ const Results = ({
     <section aria-live="polite" className="mt-8">
       {hasSearched && (
         <div className="flex items-center justify-center mb-8">
-          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-full text-sm font-bold shadow-sm">
+          <span className="bg-gray-100 text-gray-700 border border-gray-200 px-4 py-2 rounded-sm text-sm font-semibold">
             Resultados encontrados: {filteredData.length}
           </span>
         </div>
@@ -68,10 +68,10 @@ const Results = ({
 
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-12">
-              <button 
+              <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-full bg-white border border-purple-200 text-purple-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50 transition-colors"
+                className="p-2 rounded-sm bg-white border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -80,14 +80,14 @@ const Results = ({
                 {getPageNumbers().map((page, index) => (
                   <React.Fragment key={index}>
                     {page === '...' ? (
-                      <span className="px-3 py-2 text-gray-400 font-bold">...</span>
+                      <span className="px-3 py-2 text-gray-400 font-semibold">...</span>
                     ) : (
                       <button
                         onClick={() => setCurrentPage(page)}
-                        className={`w-10 h-10 rounded-full font-bold transition-all duration-300 flex items-center justify-center ${
+                        className={`w-10 h-10 rounded-sm font-semibold transition-colors flex items-center justify-center ${
                           currentPage === page
-                            ? "bg-linear-to-r from-purple-600 to-emerald-500 text-white shadow-md transform scale-110"
-                            : "bg-white text-purple-700 border border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                            ? "bg-purple-700 text-white"
+                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                         }`}
                       >
                         {page}
@@ -97,10 +97,10 @@ const Results = ({
                 ))}
               </div>
 
-              <button 
+              <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-full bg-white border border-purple-200 text-purple-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50 transition-colors"
+                className="p-2 rounded-sm bg-white border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>

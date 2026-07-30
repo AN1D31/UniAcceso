@@ -6,7 +6,7 @@ const FilterSection = ({ filters, setFilters, handleResetFilters }) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
 
-  const inputClasses = "w-full pl-10 p-3 bg-white border border-purple-100 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all text-gray-700 font-medium";
+  const inputClasses = "w-full pl-10 p-3 bg-white border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600 transition-colors text-gray-700 font-medium";
 
   return (
     <div className="space-y-4">
@@ -81,7 +81,7 @@ const FilterSection = ({ filters, setFilters, handleResetFilters }) => {
       <div className="flex justify-center pt-4">
         <button
           onClick={handleResetFilters}
-          className="flex items-center gap-2 px-6 py-2.5 bg-white border border-red-200 text-red-500 font-bold rounded-full hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm"
+          className="flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-sm hover:bg-gray-50 transition-colors"
         >
           <XCircle className="w-4 h-4" />
           Limpiar filtros

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../createClient";
-import { GraduationCap, Star, Trophy, Sparkles, Search, Edit, Trash2 } from "lucide-react";
+import { GraduationCap, Star, Trophy, Edit, Trash2 } from "lucide-react";
 import FilterSection from "../components/FilterSection";
 import Results from "../components/Results";
 import AdminAddButton from "../components/AdminAddButton";
@@ -19,7 +19,7 @@ const ExplorarPage = () => {
   const [selectedUniversity, setSelectedUniversity] = useState(null);
   
   const [formData, setFormData] = useState({
-    id: '', name: '', description: '', department: '', careers: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: ''
+    id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: ''
   });
 
   const itemsPerPage = 6;
@@ -42,67 +42,81 @@ const ExplorarPage = () => {
     if (!error && data) {
       const mapped = data.map(uni => ({
         id: uni.id, nombre: uni.name, descripcion: uni.description, departamento: uni.department,
-        carreras: uni.careers || 0,
+        carreras: uni.career_count || 0,
         nivel: uni.level, tipo: uni.type, ranking: uni.ranking,
-        tags: uni.tags || '', imagen: uni.image_url, url: uni.url, is_top: uni.is_top
+        tags: uni.tags || '', imagen: uni.image_url, url: uni.website_url, is_top: uni.is_top
       }));
       setUniversities(mapped);
       setFilteredData(mapped);
+    } else if (error) {
+      console.error('Error de Supabase:', error.message, error.details, error.hint);
     }
   }
 
-const handleCreateOrUpdateUniversity = async (e) => {
+  // Convierte cadenas vacías a null: columnas numéricas, FK y con UNIQUE
+  // no deben recibir '' — Postgres las trata como un valor real, no como ausencia.
+  const nullIfEmpty = (value) => (value === undefined || value === null || String(value).trim() === '') ? null : value;
+
+  const handleCreateOrUpdateUniversity = async (e) => {
     e.preventDefault();
-    let imageUrl = formData.image_url;
-    
-    if (file) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `uni_${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('universities').upload(fileName, file);
-      if (!uploadError) {
+
+    try {
+      let imageUrl = formData.image_url;
+
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `uni_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('universities').upload(fileName, file);
+        if (uploadError) throw uploadError;
         const { data: publicUrl } = supabase.storage.from('universities').getPublicUrl(fileName);
         imageUrl = publicUrl.publicUrl;
       }
-    }
 
-    // Payload con tipado estricto para evitar el Error 400 Bad Request
-    const payloadLimpio = {
-      name: formData.name,
-      description: formData.description,
-      department: formData.department,
-      careers: parseInt(formData.careers) || 0,
-      level: formData.level,
-      type: formData.type,
-      // Si el ranking está vacío, pasamos null explícitamente
-      ranking: formData.ranking.trim() === "" ? null : formData.ranking,
-      // CONVERSIÓN OBLIGATORIA: Supabase espera un Array (text[]), no un string
-      tags: typeof formData.tags === 'string' 
-            ? formData.tags.split(',').map(t => t.trim()).filter(t => t !== "") 
-            : formData.tags,
-      url: formData.url,
-      is_top: formData.is_top,
-      image_url: imageUrl
-    };
+      // Ranking es INTEGER en la BD (CHECK 1-1000): se limpia a solo dígitos.
+      const rankingDigits = String(formData.ranking).replace(/[^0-9]/g, '');
 
-    let error;
-    if (typeModal === 'crear') {
-      // Insertamos el objeto limpio (sin id)
-      const { error: insertError } = await supabase.from('universities').insert(payloadLimpio);
-      error = insertError;
-    } else if (typeModal === 'editar') {
-      // Actualizamos usando el ID numérico
-      const { error: updateError } = await supabase.from('universities').update(payloadLimpio).eq('id', Number(formData.id));
-      error = updateError;
-    }
+      // Payload alineado a las columnas reales de `universities`
+      const payloadLimpio = {
+        name: formData.name,
+        description: nullIfEmpty(formData.description),
+        department: nullIfEmpty(formData.department),
+        career_count: nullIfEmpty(formData.career_count) === null ? null : parseInt(formData.career_count, 10),
+        level: formData.level,
+        type: formData.type,
+        ranking: rankingDigits === '' ? null : parseInt(rankingDigits, 10),
+        // tags es un Array (text[]): '' o vacío se envía como null, no como []
+        tags: (() => {
+          const arr = typeof formData.tags === 'string'
+            ? formData.tags.split(',').map(t => t.trim()).filter(Boolean)
+            : (formData.tags || []);
+          return arr.length ? arr : null;
+        })(),
+        website_url: nullIfEmpty(formData.website_url),
+        is_top: formData.is_top,
+        image_url: nullIfEmpty(imageUrl),
+        // Sin selector de país/ciudad en este formulario todavía: se envían explícitos como null.
+        country_id: null,
+        city_id: null,
+      };
 
-    if (error) {
-      console.error("Error al guardar:", error.message);
-      alert("No se pudo guardar la universidad. Revisa la consola para más detalles.");
-    } else {
+      let error;
+      if (typeModal === 'crear') {
+        const { error: insertError } = await supabase.from('universities').insert(payloadLimpio);
+        error = insertError;
+      } else if (typeModal === 'editar') {
+        const { error: updateError } = await supabase.from('universities').update(payloadLimpio).eq('id', Number(formData.id));
+        error = updateError;
+      }
+
+      if (error) throw error;
+
       fetchUniversities();
       setTypeModal(null);
       setFile(null);
-      setFormData({ id: '', name: '', description: '', department: '', careers: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: '' });
+      setFormData({ id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: '' });
+    } catch (error) {
+      console.error('Error de Supabase:', error.message, error.details, error.hint);
+      alert("No se pudo guardar la universidad. Revisa la consola para más detalles.");
     }
   };
 
@@ -129,12 +143,12 @@ const handleCreateOrUpdateUniversity = async (e) => {
       name: uni.nombre,
       description: uni.descripcion,
       department: uni.departamento,
-      careers: uni.carreras,
+      career_count: uni.carreras,
       level: uni.nivel,
       type: uni.tipo,
       ranking: uni.ranking || '',
       tags: Array.isArray(uni.tags) ? uni.tags.join(', ') : (uni.tags || ''),
-      url: validUrl,
+      website_url: validUrl,
       is_top: uni.is_top,
       image_url: uni.imagen
     });
@@ -169,24 +183,21 @@ const handleCreateOrUpdateUniversity = async (e) => {
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <main className="min-h-screen bg-white pt-10 pb-20 px-4 sm:px-6 relative">
-      <div className="max-w-7xl mx-auto text-center mb-14 mt-6">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700 font-bold text-sm mb-4 shadow-sm border border-purple-200">
-          <Sparkles className="w-4 h-4" /> <span>Top Universidades</span>
-        </div>
-        <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-purple-800 to-emerald-500 mb-6">
+    <main className="min-h-screen bg-white pt-8 pb-10 px-4 sm:px-6 relative">
+      <div className="max-w-7xl mx-auto text-center mb-8 mt-4">
+        <h1 className="text-3xl md:text-4xl font-semibold text-gray-900 mb-2">
           Explora la Excelencia
         </h1>
       </div>
 
-      <section className="max-w-7xl mx-auto grid gap-8 sm:grid-cols-2 lg:grid-cols-3 mb-24">
+      <section className="max-w-7xl mx-auto grid gap-8 sm:grid-cols-2 lg:grid-cols-3 mb-12">
         {isAdmin && (
           <div className="h-full">
             <AdminAddButton 
               onClick={() => {
-                setFormData({ id: '', name: '', description: '', department: '', careers: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', url: '', is_top: false, image_url: '' });
+                setFormData({ id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: '' });
                 setTypeModal('crear');
-              }} 
+              }}
               label="Registrar Universidad" 
               description="Añade nuevas instituciones al directorio global." 
             />
@@ -194,41 +205,40 @@ const handleCreateOrUpdateUniversity = async (e) => {
         )}
 
         {topUniversities.map((uni) => (
-          <div key={uni.id} className="relative h-full bg-white rounded-3xl shadow-lg hover:shadow-2xl hover:shadow-purple-500/20 overflow-hidden border border-purple-100 transform transition-all duration-300 hover:-translate-y-2 flex flex-col group outline-none">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-linear-to-r from-purple-500 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"></div>
-            <div className="h-48 w-full bg-white flex items-center justify-center p-8 border-b border-gray-50 relative overflow-hidden">
-              <img src={uni.imagen || "https://placehold.co/400x200/f3e8ff/7e22ce?text=Sin+Logo"} alt={`Logo ${uni.nombre}`} className="max-h-full max-w-full object-contain relative z-10 drop-shadow-sm group-hover:scale-105 transition-transform duration-300" />
+          <div key={uni.id} className="relative h-full bg-white border border-gray-200 flex flex-col outline-none">
+            <div className="h-48 w-full bg-white flex items-center justify-center p-8 border-b border-gray-200 relative overflow-hidden">
+              <img src={uni.imagen || "https://placehold.co/400x200/f3e8ff/7e22ce?text=Sin+Logo"} alt={`Logo ${uni.nombre}`} className="max-h-full max-w-full object-contain" />
             </div>
-            <div className="p-8 flex flex-col grow bg-linear-to-b from-white to-purple-50/30">
-              <div className="flex items-start mb-4">
-                <div className="bg-emerald-100 p-2.5 rounded-xl mr-4 shrink-0 shadow-sm border border-emerald-200">
-                  <GraduationCap className="w-6 h-6 text-emerald-600" />
+            <div className="p-6 flex flex-col grow">
+              <div className="flex items-start mb-3">
+                <div className="bg-gray-100 p-2 rounded-sm mr-3 shrink-0 border border-gray-200">
+                  <GraduationCap className="w-5 h-5 text-gray-700" />
                 </div>
-                <h2 className="text-xl font-extrabold text-purple-900 leading-tight">{uni.nombre}</h2>
+                <h2 className="text-lg font-semibold text-gray-900 leading-tight">{uni.nombre}</h2>
               </div>
-              <p className="text-sm text-gray-600 mb-6 leading-relaxed grow line-clamp-3">{uni.descripcion}</p>
-              <div className="flex items-center justify-between mb-6 bg-white px-4 py-3 rounded-2xl border border-purple-100 shadow-sm">
-                <div className="flex items-center text-emerald-700">
-                  <Trophy className="w-5 h-5 mr-2" /> <span className="font-extrabold text-lg">{uni.ranking || 'N/A'}</span>
+              <p className="text-sm text-gray-600 mb-4 leading-relaxed grow line-clamp-3">{uni.descripcion}</p>
+              <div className="flex items-center justify-between mb-4 bg-white px-4 py-2.5 rounded-sm border border-gray-200">
+                <div className="flex items-center text-gray-700">
+                  <Trophy className="w-4 h-4 mr-2" /> <span className="font-semibold">{uni.ranking || 'N/A'}</span>
                 </div>
-                <Star className="w-6 h-6 text-gray-200 group-hover:text-yellow-400 transition-colors drop-shadow-sm" />
+                <Star className="w-5 h-5 text-gray-300" />
               </div>
-              
-              <div className="mt-auto flex flex-col gap-2 w-full mb-4">
+
+              <div className="mt-auto flex flex-col gap-2 w-full mb-3">
                 <button
                   onClick={() => setSelectedUniversity(uni)}
-                  className="flex items-center justify-center w-full py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white font-bold rounded-xl transition-all duration-300 shadow-sm border border-emerald-100"
+                  className="flex items-center justify-center w-full py-2.5 bg-purple-700 text-white hover:bg-purple-800 font-semibold rounded-sm transition-colors"
                 >
                   Ver oferta y detalles
                 </button>
               </div>
 
               {isAdmin && (
-                <div className="flex justify-between gap-3 pt-4 border-t border-purple-100 mt-auto">
-                  <button onClick={() => deleteUniversity(uni.id, uni.imagen)} className="flex items-center justify-center w-1/2 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                <div className="flex justify-between gap-3 pt-3 border-t border-gray-200 mt-auto">
+                  <button onClick={() => deleteUniversity(uni.id, uni.imagen)} className="flex items-center justify-center w-1/2 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-sm transition-colors">
                     <Trash2 className="w-4 h-4 mr-1.5" /> Eliminar
                   </button>
-                  <button onClick={() => displayUniversityForEdit(uni)} className="flex items-center justify-center w-1/2 py-2 text-sm font-bold text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                  <button onClick={() => displayUniversityForEdit(uni)} className="flex items-center justify-center w-1/2 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-sm transition-colors">
                     <Edit className="w-4 h-4 mr-1.5" /> Editar
                   </button>
                 </div>
@@ -238,29 +248,23 @@ const handleCreateOrUpdateUniversity = async (e) => {
         ))}
       </section>
 
-      <div className="max-w-4xl mx-auto border-t border-purple-200/60 mb-20 relative">
-         <div className="absolute left-1/2 -translate-x-1/2 -top-5 bg-white px-4">
-            <div className="bg-white p-2 rounded-full shadow-sm border border-purple-100"><Search className="w-6 h-6 text-purple-400" /></div>
-         </div>
-      </div>
-
       <section className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-xl border border-purple-100 overflow-hidden relative">
-          <div className="relative z-10 p-8 md:p-14">
-            <div className="text-center mb-10 max-w-3xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-purple-900 mb-4">Directorio Completo</h2>
+        <div className="bg-white border border-gray-200">
+          <div className="p-6 md:p-8">
+            <div className="text-center mb-6 max-w-3xl mx-auto">
+              <h2 className="text-2xl md:text-3xl font-semibold text-gray-900">Directorio Completo</h2>
             </div>
-            <div className="bg-purple-50/50 p-4 md:p-8 rounded-3xl border border-purple-100/50 shadow-inner">
+            <div className="bg-gray-50 p-4 md:p-6 border border-gray-200">
               <FilterSection filters={filters} setFilters={setFilters} handleResetFilters={handleResetFilters} />
             </div>
-            <div className="mt-10">
-              <Results 
-                paginatedData={paginatedData} 
-                filteredData={filteredData} 
-                hasSearched={hasSearched} 
-                currentPage={currentPage} 
-                setCurrentPage={setCurrentPage} 
-                totalPages={totalPages} 
+            <div className="mt-6">
+              <Results
+                paginatedData={paginatedData}
+                filteredData={filteredData}
+                hasSearched={hasSearched}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                totalPages={totalPages}
                 isAdmin={isAdmin}
                 onEdit={displayUniversityForEdit}
                 onDelete={deleteUniversity}
@@ -272,47 +276,47 @@ const handleCreateOrUpdateUniversity = async (e) => {
       </section>
 
       {typeModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-8 rounded-3xl max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setTypeModal(null)} className="absolute top-5 right-5 w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-500 font-bold">&times;</button>
-            <h2 className="text-3xl font-extrabold mb-6 text-transparent bg-clip-text bg-linear-to-r from-purple-700 to-emerald-500 text-center">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 md:p-8 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto border border-gray-200">
+            <button onClick={() => setTypeModal(null)} className="absolute top-5 right-5 w-8 h-8 rounded-sm bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-600 font-bold">&times;</button>
+            <h2 className="text-xl font-semibold mb-6 text-gray-900 text-center">
               {typeModal === 'crear' ? 'Registrar Universidad' : 'Editar Universidad'}
             </h2>
-            
+
             <form onSubmit={handleCreateOrUpdateUniversity} className="grid grid-cols-2 gap-4">
-              <input type="text" placeholder="Nombre Institución" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400" required />
-              
-              <div className="col-span-2 border border-purple-200 p-3 rounded-xl bg-purple-50/30">
-                <label className="text-xs text-purple-700 font-bold uppercase mb-2 block">Logo / Escudo</label>
-                <input type="file" onChange={(e) => setFile(e.target.files[0])} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-purple-100 file:text-purple-700 cursor-pointer" />
+              <input type="text" placeholder="Nombre Institución" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="col-span-2 p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600" required />
+
+              <div className="col-span-2 border border-gray-300 p-3 rounded-sm bg-gray-50">
+                <label className="text-xs text-gray-700 font-semibold uppercase mb-2 block">Logo / Escudo</label>
+                <input type="file" onChange={(e) => setFile(e.target.files[0])} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:bg-purple-100 file:text-purple-700 cursor-pointer" />
               </div>
 
-              <input type="text" placeholder="Departamento (Ej. Antioquia)" value={formData.department} onChange={e=>setFormData({...formData, department: e.target.value})} className="p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400" required />
-              <input type="text" placeholder="Ranking (Ej. #1 QS)" value={formData.ranking} onChange={e=>setFormData({...formData, ranking: e.target.value})} className="p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400" />
-              
-              <select value={formData.level} onChange={e=>setFormData({...formData, level: e.target.value})} className="p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 bg-white">
+              <input type="text" placeholder="Departamento (Ej. Antioquia)" value={formData.department} onChange={e=>setFormData({...formData, department: e.target.value})} className="p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600" required />
+              <input type="number" min="1" max="1000" placeholder="Ranking (Ej. 1)" value={formData.ranking} onChange={e=>setFormData({...formData, ranking: e.target.value})} className="p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600" />
+
+              <select value={formData.level} onChange={e=>setFormData({...formData, level: e.target.value})} className="p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 bg-white">
                 <option value="Pregrado">Pregrado</option>
                 <option value="Posgrado">Posgrado</option>
               </select>
-              <select value={formData.type} onChange={e=>setFormData({...formData, type: e.target.value})} className="p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 bg-white">
+              <select value={formData.type} onChange={e=>setFormData({...formData, type: e.target.value})} className="p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 bg-white">
                 <option value="Pública">Pública</option>
                 <option value="Privada">Privada</option>
               </select>
 
-              <textarea placeholder="Descripción general" rows="2" value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 resize-none" required />
-              
-              <label className="col-span-2 text-sm font-bold text-purple-800">Cantidad de Programas Ofertados</label>
-              <input type="number" placeholder="Ej. 45" value={formData.careers} onChange={e=>setFormData({...formData, careers: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400" required />
-              
-              <input type="text" placeholder="Etiquetas Destacadas (Ej. Pública, Ciencias)" value={formData.tags} onChange={e=>setFormData({...formData, tags: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 text-sm" />
-              <input type="url" placeholder="Sitio Web Oficial" value={formData.url} onChange={e=>setFormData({...formData, url: e.target.value})} className="col-span-2 p-3 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400" required />
-              
-              <label className="col-span-2 flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-200 cursor-pointer">
-                <input type="checkbox" checked={formData.is_top} onChange={e=>setFormData({...formData, is_top: e.target.checked})} className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500" />
-                <span className="font-bold text-emerald-800">¿Es Universidad Destacada?</span>
+              <textarea placeholder="Descripción general" rows="2" value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} className="col-span-2 p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 resize-none" required />
+
+              <label className="col-span-2 text-sm font-semibold text-gray-700">Cantidad de Programas Ofertados</label>
+              <input type="number" placeholder="Ej. 45" value={formData.career_count} onChange={e=>setFormData({...formData, career_count: e.target.value})} className="col-span-2 p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600" required />
+
+              <input type="text" placeholder="Etiquetas Destacadas (Ej. Pública, Ciencias)" value={formData.tags} onChange={e=>setFormData({...formData, tags: e.target.value})} className="col-span-2 p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 text-sm" />
+              <input type="url" placeholder="Sitio Web Oficial" value={formData.website_url} onChange={e=>setFormData({...formData, website_url: e.target.value})} className="col-span-2 p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600" required />
+
+              <label className="col-span-2 flex items-center gap-3 p-3 bg-gray-50 rounded-sm border border-gray-200 cursor-pointer">
+                <input type="checkbox" checked={formData.is_top} onChange={e=>setFormData({...formData, is_top: e.target.checked})} className="w-5 h-5 text-purple-700 rounded-sm focus:ring-purple-600" />
+                <span className="font-semibold text-gray-800">¿Es Universidad Destacada?</span>
               </label>
 
-              <button type="submit" className="col-span-2 bg-linear-to-r from-purple-600 to-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-lg hover:-translate-y-0.5 transition-all mt-2">
+              <button type="submit" className="col-span-2 bg-purple-700 text-white font-semibold py-3.5 rounded-sm hover:bg-purple-800 transition-colors mt-2">
                 {typeModal === 'crear' ? 'Guardar Universidad' : 'Actualizar Universidad'}
               </button>
             </form>

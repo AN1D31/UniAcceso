@@ -102,96 +102,96 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6">
-      <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-purple-100">
+    <div className="min-h-screen bg-white flex items-center justify-center py-10 px-4 sm:px-6">
+      <div className="max-w-md w-full bg-white p-8 border border-gray-200">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-purple-800 to-emerald-500">
+          <h2 className="text-2xl font-semibold text-gray-900">
             Crear Cuenta
           </h2>
-          <p className="text-gray-600 mt-2 font-medium">Únete a la comunidad UniAcceso</p>
+          <p className="text-gray-600 mt-2">Únete a la comunidad UniAcceso</p>
         </div>
 
         {errorMsg && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-100 animate-pulse">
+          <div className="bg-red-50 text-red-700 p-3 rounded-sm mb-6 text-sm font-semibold text-center border border-red-200">
             <XCircle className="inline w-5 h-5 mr-1 -mt-0.5" /> {errorMsg}
           </div>
         )}
 
         {successMsg && (
-          <div className="bg-emerald-50 text-emerald-700 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-emerald-200 animate-pulse">
+          <div className="bg-emerald-50 text-emerald-700 p-3 rounded-sm mb-6 text-sm font-semibold text-center border border-emerald-200">
             <CheckCircle2 className="inline w-5 h-5 mr-1 -mt-0.5" /> {successMsg}
           </div>
         )}
 
         <form onSubmit={handleRegister} className="space-y-5">
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 w-5 h-5" />
-            <input type="text" name="fullName" placeholder="Nombre Público (Ej. Juan Pérez)" required onChange={handleChange} className="w-full pl-10 p-3 bg-purple-50/50 border border-purple-100 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none" />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input type="text" name="fullName" placeholder="Nombre Público (Ej. Juan Pérez)" required onChange={handleChange} className="w-full pl-10 p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none" />
           </div>
 
           <div className="relative">
-            <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 w-5 h-5" />
-            <input 
-              type="text" 
-              name="username" 
-              placeholder="Nombre de Usuario Único" 
-              required 
-              onChange={handleChange} 
-              className={`w-full pl-10 pr-10 p-3 bg-purple-50/50 border rounded-xl outline-none transition-colors ${
-                usernameStatus === 'taken' ? 'border-red-300 focus:ring-2 focus:ring-red-400' : 
-                usernameStatus === 'available' ? 'border-emerald-300 focus:ring-2 focus:ring-emerald-400' : 
-                'border-purple-100 focus:ring-2 focus:ring-emerald-400'
-              }`} 
+            <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              name="username"
+              placeholder="Nombre de Usuario Único"
+              required
+              onChange={handleChange}
+              className={`w-full pl-10 pr-10 p-3 bg-white border rounded-sm outline-none transition-colors ${
+                usernameStatus === 'taken' ? 'border-red-300 focus:ring-1 focus:ring-red-500' :
+                usernameStatus === 'available' ? 'border-emerald-300 focus:ring-1 focus:ring-emerald-500' :
+                'border-gray-300 focus:ring-1 focus:ring-purple-600 focus:border-purple-600'
+              }`}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              {usernameStatus === 'checking' && <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />}
+              {usernameStatus === 'checking' && <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
               {usernameStatus === 'available' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
               {usernameStatus === 'taken' && <XCircle className="w-5 h-5 text-red-500" />}
             </div>
             {usernameStatus === 'taken' && (
-              <p className="text-xs text-red-500 font-bold mt-1 ml-1 absolute -bottom-5">Este usuario ya está en uso.</p>
+              <p className="text-xs text-red-600 font-semibold mt-1 ml-1 absolute -bottom-5">Este usuario ya está en uso.</p>
             )}
           </div>
 
           <div className="relative pt-2">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 w-5 h-5 mt-1" />
-            <input type="email" name="email" placeholder="Correo Electrónico" required onChange={handleChange} className="w-full pl-10 p-3 bg-purple-50/50 border border-purple-100 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 mt-1" />
+            <input type="email" name="email" placeholder="Correo Electrónico" required onChange={handleChange} className="w-full pl-10 p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none" />
           </div>
 
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 w-5 h-5" />
-            <input type="password" name="password" placeholder="Contraseña (Mín. 6 caracteres)" required minLength="6" onChange={handleChange} className="w-full pl-10 p-3 bg-purple-50/50 border border-purple-100 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input type="password" name="password" placeholder="Contraseña (Mín. 6 caracteres)" required minLength="6" onChange={handleChange} className="w-full pl-10 p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none" />
           </div>
 
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 w-5 h-5" />
-            <input 
-              type="password" 
-              name="confirmPassword" 
-              placeholder="Confirmar Contraseña" 
-              required 
-              minLength="6" 
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Confirmar Contraseña"
+              required
+              minLength="6"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)} 
-              className={`w-full pl-10 p-3 bg-purple-50/50 border rounded-xl outline-none transition-colors ${
-                confirmPassword && formData.password !== confirmPassword 
-                ? 'border-red-300 focus:ring-2 focus:ring-red-400' 
-                : 'border-purple-100 focus:ring-2 focus:ring-emerald-400'
-              }`} 
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={`w-full pl-10 p-3 bg-white border rounded-sm outline-none transition-colors ${
+                confirmPassword && formData.password !== confirmPassword
+                ? 'border-red-300 focus:ring-1 focus:ring-red-500'
+                : 'border-gray-300 focus:ring-1 focus:ring-purple-600 focus:border-purple-600'
+              }`}
             />
           </div>
 
-          <button 
-            type="submit" 
-            disabled={loading || usernameStatus === 'taken'} 
-            className="w-full bg-linear-to-r from-purple-600 to-emerald-500 hover:from-purple-700 text-white font-bold py-3 rounded-xl shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+          <button
+            type="submit"
+            disabled={loading || usernameStatus === 'taken'}
+            className="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-4"
           >
             {loading ? 'Registrando...' : 'Registrarse'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600 font-medium">
-          ¿Ya tienes cuenta? <Link to="/login" className="text-purple-600 hover:text-purple-800 font-bold">Inicia sesión aquí</Link>
+        <p className="mt-6 text-center text-sm text-gray-600">
+          ¿Ya tienes cuenta? <Link to="/login" className="text-purple-700 hover:text-purple-900 font-semibold">Inicia sesión aquí</Link>
         </p>
       </div>
     </div>
