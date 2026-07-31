@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../createClient";
 import { GraduationCap, Star, Trophy, Edit, Trash2 } from "lucide-react";
 import FilterSection from "../components/FilterSection";
 import Results from "../components/Results";
 import AdminAddButton from "../components/AdminAddButton";
-import UniversityDetailModal from "../components/UniversityDetailModal";
 
 const ExplorarPage = () => {
   const [universities, setUniversities] = useState([]);
@@ -14,10 +14,9 @@ const ExplorarPage = () => {
   const [hasSearched, setHasSearched] = useState(false);
   
   const [isAdmin, setIsAdmin] = useState(false);
-  const [typeModal, setTypeModal] = useState(null); 
+  const [typeModal, setTypeModal] = useState(null);
   const [file, setFile] = useState(null);
-  const [selectedUniversity, setSelectedUniversity] = useState(null);
-  
+
   const [formData, setFormData] = useState({
     id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: ''
   });
@@ -225,12 +224,12 @@ const ExplorarPage = () => {
               </div>
 
               <div className="mt-auto flex flex-col gap-2 w-full mb-3">
-                <button
-                  onClick={() => setSelectedUniversity(uni)}
+                <Link
+                  to={`/universidades/${uni.id}`}
                   className="flex items-center justify-center w-full py-2.5 bg-purple-700 text-white hover:bg-purple-800 font-semibold rounded-sm transition-colors"
                 >
                   Ver oferta y detalles
-                </button>
+                </Link>
               </div>
 
               {isAdmin && (
@@ -268,7 +267,6 @@ const ExplorarPage = () => {
                 isAdmin={isAdmin}
                 onEdit={displayUniversityForEdit}
                 onDelete={deleteUniversity}
-                onViewDetails={(uni) => setSelectedUniversity(uni)}
               />
             </div>
           </div>
@@ -323,12 +321,6 @@ const ExplorarPage = () => {
           </div>
         </div>
       )}
-
-      <UniversityDetailModal 
-        isOpen={selectedUniversity !== null} 
-        onClose={() => setSelectedUniversity(null)} 
-        university={selectedUniversity} 
-      />
     </main>
   );
 };

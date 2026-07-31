@@ -123,23 +123,23 @@ const Profile = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-purple-600 font-bold">Cargando perfil...</div>;
 
   return (
-    <div className="min-h-screen bg-purple-50/30 py-12 px-4 sm:px-6 relative">
+    <div className="min-h-screen bg-white py-10 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
-        
+
         <div className="mb-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-purple-800 to-emerald-600">
+          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
             Mi Panel de Estudiante
           </h1>
-          <p className="text-gray-600 mt-2 font-medium">Configura tu perfil para destacar ante universidades y becas.</p>
+          <p className="text-gray-600 mt-2">Configura tu perfil para destacar ante universidades y becas.</p>
         </div>
 
         {statusMsg.type === 'success' && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold text-center animate-pulse">
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-sm text-emerald-700 font-semibold text-center">
             <CheckCircle2 className="inline w-5 h-5 mr-2 -mt-0.5" />{statusMsg.text}
           </div>
         )}
         {statusMsg.type === 'error' && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 font-bold text-center">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-sm text-red-700 font-semibold text-center">
             <AlertTriangle className="inline w-5 h-5 mr-2 -mt-0.5" />{statusMsg.text}
           </div>
         )}
@@ -148,16 +148,16 @@ const Profile = () => {
           
           <div className="grid md:grid-cols-3 gap-8">
             <div className="md:col-span-1 space-y-8">
-              <section className="bg-white p-8 rounded-3xl shadow-md border border-purple-100 flex flex-col items-center text-center">
+              <section className="bg-white p-8 rounded-sm border border-gray-200 flex flex-col items-center text-center">
                 <div className="relative mb-6">
-                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-purple-100 bg-purple-50 flex items-center justify-center">
+                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-50 flex items-center justify-center">
                     {profileData.avatar_url ? (
                       <img src={profileData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <User className="w-16 h-16 text-purple-300" />
+                      <User className="w-16 h-16 text-gray-300" />
                     )}
                   </div>
-                  <label className="absolute bottom-0 right-0 bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-full cursor-pointer shadow-lg transition-colors">
+                  <label className="absolute bottom-0 right-0 bg-purple-700 hover:bg-purple-800 text-white p-2 rounded-sm cursor-pointer transition-colors">
                     <Camera className="w-5 h-5" />
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => setFile(e.target.files[0])} />
                   </label>
@@ -165,80 +165,80 @@ const Profile = () => {
 
                 <div className="w-full space-y-4 text-left">
                   <div>
-                    <label className="text-xs font-bold text-purple-700 uppercase mb-1 block">Nombre Público</label>
-                    <input type="text" name="full_name" value={profileData.full_name} onChange={handleChange} className="w-full p-3 bg-purple-50/50 border border-purple-100 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none font-medium" />
+                    <label className="text-xs font-semibold text-gray-700 uppercase mb-1 block">Nombre Público</label>
+                    <input type="text" name="full_name" value={profileData.full_name} onChange={handleChange} className="w-full p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none font-medium" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-purple-700 uppercase mb-1 block">Usuario Único</label>
+                    <label className="text-xs font-semibold text-gray-700 uppercase mb-1 block">Usuario Único</label>
                     <div className="flex items-center">
-                      <span className="bg-purple-100 p-3 rounded-l-xl border border-r-0 border-purple-200 text-purple-600 font-bold">@</span>
-                      <input type="text" name="username" value={profileData.username} onChange={handleChange} className="w-full p-3 bg-purple-50/50 border border-purple-100 rounded-r-xl focus:ring-2 focus:ring-emerald-400 outline-none font-medium" />
+                      <span className="bg-gray-100 p-3 rounded-l-sm border border-r-0 border-gray-300 text-gray-600 font-semibold">@</span>
+                      <input type="text" name="username" value={profileData.username} onChange={handleChange} className="w-full p-3 bg-white border border-gray-300 rounded-r-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none font-medium" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-purple-700 uppercase mb-1 block">Biografía Corta</label>
-                    <textarea name="bio" value={profileData.bio} onChange={handleChange} rows="3" placeholder="¡Cuéntanos sobre ti!" className="w-full p-3 bg-purple-50/50 border border-purple-100 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none font-medium resize-none" />
+                    <label className="text-xs font-semibold text-gray-700 uppercase mb-1 block">Biografía Corta</label>
+                    <textarea name="bio" value={profileData.bio} onChange={handleChange} rows="3" placeholder="¡Cuéntanos sobre ti!" className="w-full p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none font-medium resize-none" />
                   </div>
                 </div>
               </section>
             </div>
 
             <div className="md:col-span-2 space-y-8">
-              <section className="bg-white p-8 rounded-3xl shadow-md border border-purple-100">
+              <section className="bg-white p-8 rounded-sm border border-gray-200">
                 <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                  <Sparkles className="w-6 h-6 text-emerald-500" />
-                  <h2 className="text-2xl font-extrabold text-purple-900">Atributos Profesionales</h2>
+                  <Sparkles className="w-5 h-5 text-purple-700" />
+                  <h2 className="text-lg font-semibold text-gray-900">Atributos Profesionales</h2>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="col-span-2 md:col-span-1">
-                    <label className="flex items-center gap-2 text-sm font-bold text-purple-800 mb-2">
-                      <Star className="w-4 h-4 text-amber-500" /> Habilidades Destacadas
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <Star className="w-4 h-4 text-gray-400" /> Habilidades Destacadas
                     </label>
-                    <textarea name="skills" value={profileData.skills} onChange={handleChange} rows="3" placeholder="Ej. Liderazgo, Programación en Python..." className="w-full p-3 bg-white border border-purple-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm text-gray-700" />
+                    <textarea name="skills" value={profileData.skills} onChange={handleChange} rows="3" placeholder="Ej. Liderazgo, Programación en Python..." className="w-full p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none text-sm text-gray-700" />
                   </div>
 
                   <div className="col-span-2 md:col-span-1">
-                    <label className="flex items-center gap-2 text-sm font-bold text-purple-800 mb-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                       <span className="text-xl">🎨</span> Pasatiempos / Hobbies
                     </label>
-                    <textarea name="hobbies" value={profileData.hobbies} onChange={handleChange} rows="3" placeholder="Ej. Tocar guitarra, Calistenia..." className="w-full p-3 bg-white border border-purple-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm text-gray-700" />
+                    <textarea name="hobbies" value={profileData.hobbies} onChange={handleChange} rows="3" placeholder="Ej. Tocar guitarra, Calistenia..." className="w-full p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none text-sm text-gray-700" />
                   </div>
 
                   <div className="col-span-2 md:col-span-1">
-                    <label className="flex items-center gap-2 text-sm font-bold text-purple-800 mb-2">
-                      <BookOpen className="w-4 h-4 text-blue-500" /> Formación Académica
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <BookOpen className="w-4 h-4 text-gray-400" /> Formación Académica
                     </label>
-                    <textarea name="academic_experience" value={profileData.academic_experience} onChange={handleChange} rows="3" placeholder="Ej. Cursando 11mo grado..." className="w-full p-3 bg-white border border-purple-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm text-gray-700" />
+                    <textarea name="academic_experience" value={profileData.academic_experience} onChange={handleChange} rows="3" placeholder="Ej. Cursando 11mo grado..." className="w-full p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none text-sm text-gray-700" />
                   </div>
 
                   <div className="col-span-2 md:col-span-1">
-                    <label className="flex items-center gap-2 text-sm font-bold text-purple-800 mb-2">
-                      <Briefcase className="w-4 h-4 text-gray-500" /> Experiencia Laboral / Proyectos
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <Briefcase className="w-4 h-4 text-gray-400" /> Experiencia Laboral / Proyectos
                     </label>
-                    <textarea name="work_experience" value={profileData.work_experience} onChange={handleChange} rows="3" placeholder="Ej. Proyecto de feria de ciencias..." className="w-full p-3 bg-white border border-purple-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm text-gray-700" />
+                    <textarea name="work_experience" value={profileData.work_experience} onChange={handleChange} rows="3" placeholder="Ej. Proyecto de feria de ciencias..." className="w-full p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none text-sm text-gray-700" />
                   </div>
                 </div>
               </section>
 
-              <section className="bg-white p-8 rounded-3xl shadow-md border border-purple-100">
+              <section className="bg-white p-8 rounded-sm border border-gray-200">
                 <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                  <Shield className="w-6 h-6 text-purple-600" />
-                  <h2 className="text-2xl font-extrabold text-purple-900">Seguridad de la Cuenta</h2>
+                  <Shield className="w-5 h-5 text-purple-700" />
+                  <h2 className="text-lg font-semibold text-gray-900">Seguridad de la Cuenta</h2>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                       <Mail className="w-4 h-4 text-gray-400" /> Correo Alternativo
                     </label>
-                    <input type="email" name="backup_email" value={profileData.backup_email} onChange={handleChange} placeholder="Para recuperación de cuenta" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none text-sm" />
+                    <input type="email" name="backup_email" value={profileData.backup_email} onChange={handleChange} placeholder="Para recuperación de cuenta" className="w-full p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none text-sm" />
                   </div>
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                       <Lock className="w-4 h-4 text-gray-400" /> Cambiar Contraseña
                     </label>
-                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Nueva contraseña (Mín 6 caracteres)" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none text-sm" />
+                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Nueva contraseña (Mín 6 caracteres)" className="w-full p-3 bg-white border border-gray-300 rounded-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none text-sm" />
                     <p className="text-xs text-gray-400 mt-1">Déjalo en blanco si no deseas cambiarla.</p>
                   </div>
                 </div>
@@ -246,19 +246,19 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-6 rounded-3xl shadow-lg border border-purple-100 mt-8 gap-4">
-            <button 
-              type="button" 
+          <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-6 rounded-sm border border-gray-200 mt-8 gap-4">
+            <button
+              type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center justify-center gap-2 px-6 py-3 text-red-500 font-bold rounded-xl hover:bg-red-50 transition-colors w-full sm:w-auto"
+              className="flex items-center justify-center gap-2 px-6 py-3 text-red-600 font-semibold rounded-sm hover:bg-red-50 transition-colors w-full sm:w-auto"
             >
               <Trash2 className="w-5 h-5" /> Eliminar mi cuenta
             </button>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={saving}
-              className="flex items-center justify-center gap-2 px-8 py-3 bg-linear-to-r from-purple-600 to-emerald-500 hover:from-purple-700 text-white font-extrabold rounded-xl shadow-md transition-all w-full sm:w-auto transform hover:-translate-y-1"
+              className="flex items-center justify-center gap-2 px-8 py-3 bg-purple-700 hover:bg-purple-800 text-white font-semibold rounded-sm transition-colors w-full sm:w-auto disabled:opacity-70"
             >
               {saving ? 'Guardando...' : (
                 <><Save className="w-5 h-5" /> Guardar Cambios</>
@@ -268,26 +268,26 @@ const Profile = () => {
         </form>
 
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-8 rounded-3xl max-w-md w-full shadow-2xl text-center border border-red-100">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-8 rounded-sm max-w-md w-full text-center border border-gray-200">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-sm bg-red-50 mb-6">
                 <AlertTriangle className="h-8 w-8 text-red-600" />
               </div>
-              <h3 className="text-2xl font-extrabold text-gray-900 mb-2">¿Eliminar cuenta?</h3>
-              <p className="text-gray-600 mb-8 font-medium">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">¿Eliminar cuenta?</h3>
+              <p className="text-gray-600 mb-8">
                 Esta acción es irreversible. Se borrarán permanentemente todos tus datos, perfil y configuraciones.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-3">
-                <button 
+                <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="w-full px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                  className="w-full px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-sm hover:bg-gray-200 transition-colors"
                 >
                   Cancelar
                 </button>
-                <button 
+                <button
                   onClick={executeDeleteAccount}
-                  className="w-full px-6 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md"
+                  className="w-full px-6 py-3 bg-red-600 text-white font-semibold rounded-sm hover:bg-red-700 transition-colors"
                 >
                   Sí, eliminar
                 </button>

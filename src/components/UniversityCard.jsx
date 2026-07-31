@@ -1,7 +1,8 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { MapPin, GraduationCap, Target, Landmark, ExternalLink, Edit, Trash2 } from "lucide-react";
 
-const UniversityCard = ({ university, isAdmin, onEdit, onDelete, onViewDetails }) => {
+const UniversityCard = ({ university, isAdmin, onEdit, onDelete }) => {
   const getValidUrl = (url) => {
     if (!url) return "#";
     if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -52,12 +53,12 @@ const UniversityCard = ({ university, isAdmin, onEdit, onDelete, onViewDetails }
         </ul>
 
         <div className="mt-auto flex flex-col gap-2">
-          <button
-            onClick={() => onViewDetails(university)}
+          <Link
+            to={`/universidades/${university.id}`}
             className="flex items-center justify-center w-full py-2.5 bg-purple-700 text-white hover:bg-purple-800 font-semibold rounded-sm transition-colors"
           >
             Ver oferta y detalles
-          </button>
+          </Link>
 
           <a
             href={getValidUrl(university.url)}

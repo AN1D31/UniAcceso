@@ -51,7 +51,7 @@ const Navbar = () => {
           <div className="border-l border-gray-200 pl-6 flex items-center space-x-3">
             {session ? (
               <>
-                <Link to="/perfil" className="flex items-center text-gray-700 hover:text-purple-700 font-semibold">
+                <Link to="/perfil" className="flex items-center text-gray-700 hover:text-purple-700 font-medium text-sm">
                   <UserCircle className="w-5 h-5 mr-1" /> Mi Perfil
                 </Link>
                 <button onClick={handleLogout} className="flex items-center text-red-600 hover:text-red-700 font-semibold">

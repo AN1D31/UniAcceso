@@ -19,8 +19,7 @@ const Results = ({
   totalPages,
   isAdmin,
   onEdit,
-  onDelete,
-  onViewDetails
+  onDelete
 }) => {
   const getPageNumbers = () => {
     const pages = [];
@@ -60,7 +59,6 @@ const Results = ({
                   isAdmin={isAdmin}
                   onEdit={onEdit}
                   onDelete={onDelete}
-                  onViewDetails={onViewDetails}
                 />
               </div>
             ))}

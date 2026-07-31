@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import EarlyAccess from './components/EarlyAccess';
 import Explorar from './pages/Explorar';
+import UniversityDetailPage from './pages/UniversityDetailPage';
 import Contacto from './pages/Contacto';
 import Eventos from './pages/Eventos';
 import Scholarships from './pages/Scholarships';
@@ -18,6 +19,7 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<EarlyAccess />} />
           <Route path="/explorar" element={<Explorar />} />
+          <Route path="/universidades/:universityId" element={<UniversityDetailPage />} />
           <Route path="/contacto" element={<Contacto />} />
           <Route path="/recursos" element={<Eventos />} />
           <Route path="/becas" element={<Scholarships />} />
