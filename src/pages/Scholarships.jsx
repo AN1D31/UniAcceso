@@ -1,17 +1,36 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../createClient";
-import { MapPin, Calendar, ExternalLink, Edit, Trash2, Plus, Search, Frown } from "lucide-react";
+import { MapPin, Calendar, Wallet, Info, Edit, Trash2, Plus, Search, Frown } from "lucide-react";
 import '../App.css';
+
+// Fechas de la BD llegan en formato ISO (YYYY-MM-DD); se formatean sin pasar
+// por Date() para evitar corrimientos de día por zona horaria.
+const formatDeadline = (dateStr) => {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split('-');
+  if (!y || !m || !d) return null;
+  return `${d}/${m}/${y}`;
+};
+
+const getCoverageInfo = (scholarship) => {
+  const isFree = !scholarship.amount || Number(scholarship.amount) === 0;
+  const isFullCoverage = scholarship.coverage === 'total' || scholarship.coverage === 'matricula';
+
+  if (isFree) return { label: 'Gratuita', highlighted: true };
+  if (isFullCoverage) return { label: 'Cobertura Total', highlighted: true };
+  return { label: `${scholarship.currency || ''} ${scholarship.amount}`.trim(), highlighted: false };
+};
 
 const Scholarships = () => {
 
   const [scholarships, setScholarships] = useState([]);
   const [universities, setUniversities] = useState([]);
   const [scholarship, setScholarship] = useState({
-    name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: ''
+    name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: ''
   });
   const [scholarship2, setScholarship2] = useState({
-    id: '', name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: ''
+    id: '', name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: ''
   });
 
   const [typeModal, setTypeModal] = useState(null);
@@ -115,9 +134,9 @@ const Scholarships = () => {
           city_id: null,
           sponsor_id: null,
           category_id: null,
-          amount: null,
+          amount: nullIfEmpty(scholarship.amount) === null ? null : parseFloat(scholarship.amount),
           currency: 'USD',
-          coverage: null,
+          coverage: nullIfEmpty(scholarship.coverage),
           is_active: true,
           image_url: nullIfEmpty(imageUrl)
         });
@@ -125,7 +144,7 @@ const Scholarships = () => {
       if (error) throw error;
 
       fetchScholarships();
-      setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: '' });
+      setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: '' });
       setTypeModal(null);
       setFile(null);
     } catch (error) {
@@ -157,7 +176,8 @@ const Scholarships = () => {
           id: sch.id, name: sch.name, url: sch.url || '',
           description: sch.description || '', requirements: sch.requirements || '',
           start_date: sch.start_date || '', finish_date: sch.finish_date || '',
-          university_id: sch.university_id || '', image_url: sch.image_url || ''
+          university_id: sch.university_id || '', image_url: sch.image_url || '',
+          amount: sch.amount ?? '', coverage: sch.coverage || ''
         });
         setTypeModal('editar');
       }
@@ -194,6 +214,8 @@ const Scholarships = () => {
           start_date: nullIfEmpty(scholarship2.start_date),
           finish_date: nullIfEmpty(scholarship2.finish_date),
           university_id: parseInt(scholarship2.university_id, 10),
+          amount: nullIfEmpty(scholarship2.amount) === null ? null : parseFloat(scholarship2.amount),
+          coverage: nullIfEmpty(scholarship2.coverage),
           image_url: nullIfEmpty(imageUrl)
         })
         .eq('id', scholarshipId);
@@ -306,6 +328,13 @@ const Scholarships = () => {
                 {scholarship.name}
               </h3>
 
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-sm px-3 py-2.5 mb-4">
+                <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                <span className="text-xs font-medium text-gray-600 truncate">
+                  Fecha límite: <span className="font-semibold text-gray-800">{formatDeadline(scholarship.finish_date) || 'N/A'}</span>
+                </span>
+              </div>
+
               <div className="flex flex-row items-center justify-between gap-2 mb-4">
                 <div className="flex items-center text-sm font-medium text-gray-600 gap-1.5 min-w-0">
                   <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
@@ -322,14 +351,19 @@ const Scholarships = () => {
                 {scholarship.description}
               </p>
 
-              <a
-                href={scholarship.url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-sm px-3 py-2.5 mb-4">
+                <Wallet className="w-4 h-4 text-gray-400 shrink-0" />
+                <span className={`text-xs font-semibold truncate ${getCoverageInfo(scholarship).highlighted ? 'text-green-600' : 'text-gray-800'}`}>
+                  {getCoverageInfo(scholarship).label}
+                </span>
+              </div>
+
+              <Link
+                to={`/becas/${scholarship.id}`}
                 className="mt-auto flex items-center justify-center w-full py-3 bg-purple-700 text-white hover:bg-purple-800 font-semibold rounded-sm transition-colors mb-4"
               >
-                <ExternalLink className="w-4 h-4 mr-2" /> Sitio Oficial
-              </a>
+                <Info className="w-4 h-4 mr-2" /> Ver detalles
+              </Link>
 
               {isAdmin && (
                 <div className="flex justify-between gap-3 pt-4 border-t border-gray-200">
@@ -400,6 +434,24 @@ const Scholarships = () => {
                     <input type="date" name="finish_date" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.finish_date : scholarship.finish_date} className="border border-gray-300 bg-white p-3 rounded-sm w-full text-gray-700 font-medium outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600" />
                   </div>
                 </div>
+
+                <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <label className="text-xs text-gray-700 font-semibold uppercase tracking-wider mb-1 block">Monto</label>
+                    <input type="number" min="0" step="0.01" placeholder="Ej. 500" name="amount" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.amount : scholarship.amount} className="border border-gray-300 bg-white p-3 rounded-sm w-full text-gray-700 font-medium outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600" />
+                  </div>
+                  <div className="w-1/2">
+                    <label className="text-xs text-gray-700 font-semibold uppercase tracking-wider mb-1 block">Cobertura</label>
+                    <select name="coverage" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.coverage : scholarship.coverage} className="border border-gray-300 bg-white p-3 rounded-sm w-full text-gray-700 font-medium outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600">
+                      <option value="">Sin especificar</option>
+                      <option value="parcial">Parcial</option>
+                      <option value="total">Total</option>
+                      <option value="manutencion">Manutención</option>
+                      <option value="matricula">Matrícula</option>
+                    </select>
+                  </div>
+                </div>
+
                 <button type="submit" className="bg-purple-700 hover:bg-purple-800 text-white py-3.5 rounded-sm font-semibold mt-2 transition-colors">
                   {typeModal === 'crear' ? 'Publicar Beca' : 'Guardar Cambios'}
                 </button>

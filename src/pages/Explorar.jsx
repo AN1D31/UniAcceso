@@ -18,7 +18,7 @@ const ExplorarPage = () => {
   const [file, setFile] = useState(null);
 
   const [formData, setFormData] = useState({
-    id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: ''
+    id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: '', mision_y_vision: '', source_metadata: {}
   });
 
   const itemsPerPage = 6;
@@ -43,7 +43,8 @@ const ExplorarPage = () => {
         id: uni.id, nombre: uni.name, descripcion: uni.description, departamento: uni.department,
         carreras: uni.career_count || 0,
         nivel: uni.level, tipo: uni.type, ranking: uni.ranking,
-        tags: uni.tags || '', imagen: uni.image_url, url: uni.website_url, is_top: uni.is_top
+        tags: uni.tags || '', imagen: uni.image_url, url: uni.website_url, is_top: uni.is_top,
+        source_metadata: uni.source_metadata || {}
       }));
       setUniversities(mapped);
       setFilteredData(mapped);
@@ -96,6 +97,9 @@ const ExplorarPage = () => {
         // Sin selector de país/ciudad en este formulario todavía: se envían explícitos como null.
         country_id: null,
         city_id: null,
+        // No existe columna mision_y_vision en la BD: se guarda dentro del jsonb
+        // source_metadata, preservando cualquier otra clave que ya tuviera.
+        source_metadata: { ...(formData.source_metadata || {}), mision_y_vision: nullIfEmpty(formData.mision_y_vision) },
       };
 
       let error;
@@ -112,7 +116,7 @@ const ExplorarPage = () => {
       fetchUniversities();
       setTypeModal(null);
       setFile(null);
-      setFormData({ id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: '' });
+      setFormData({ id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: '', mision_y_vision: '', source_metadata: {} });
     } catch (error) {
       console.error('Error de Supabase:', error.message, error.details, error.hint);
       alert("No se pudo guardar la universidad. Revisa la consola para más detalles.");
@@ -149,7 +153,9 @@ const ExplorarPage = () => {
       tags: Array.isArray(uni.tags) ? uni.tags.join(', ') : (uni.tags || ''),
       website_url: validUrl,
       is_top: uni.is_top,
-      image_url: uni.imagen
+      image_url: uni.imagen,
+      mision_y_vision: uni.source_metadata?.mision_y_vision || '',
+      source_metadata: uni.source_metadata || {}
     });
     setTypeModal('editar');
   };
@@ -194,7 +200,7 @@ const ExplorarPage = () => {
           <div className="h-full">
             <AdminAddButton 
               onClick={() => {
-                setFormData({ id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: '' });
+                setFormData({ id: '', name: '', description: '', department: '', career_count: 0, level: 'Pregrado', type: 'Pública', ranking: '', tags: '', website_url: '', is_top: false, image_url: '', mision_y_vision: '', source_metadata: {} });
                 setTypeModal('crear');
               }}
               label="Registrar Universidad" 
@@ -302,6 +308,9 @@ const ExplorarPage = () => {
               </select>
 
               <textarea placeholder="Descripción general" rows="2" value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} className="col-span-2 p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 resize-none" required />
+
+              <label className="col-span-2 text-sm font-semibold text-gray-700">Misión y Visión</label>
+              <textarea placeholder="Misión y visión institucional" rows="3" value={formData.mision_y_vision} onChange={e=>setFormData({...formData, mision_y_vision: e.target.value})} className="col-span-2 p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600 resize-none" />
 
               <label className="col-span-2 text-sm font-semibold text-gray-700">Cantidad de Programas Ofertados</label>
               <input type="number" placeholder="Ej. 45" value={formData.career_count} onChange={e=>setFormData({...formData, career_count: e.target.value})} className="col-span-2 p-3 border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-purple-600" required />

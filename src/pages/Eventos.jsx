@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../createClient";
 import { differenceInDays } from "date-fns";
 import { Calendar, MapPin, Info, Monitor, Users, Ticket, Star, Search, Edit, Trash2 } from "lucide-react";
@@ -174,9 +175,9 @@ export default function Eventos() {
                       </div>
                       <p className="text-sm text-gray-500 mb-6 line-clamp-3 grow">{evento.descripcion}</p>
 
-                      <a href={evento.enlace} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center justify-center py-3 px-4 bg-purple-700 text-white hover:bg-purple-800 font-semibold rounded-sm transition-colors">
+                      <Link to={`/recursos/${evento.id}`} className="mt-auto flex items-center justify-center py-3 px-4 bg-purple-700 text-white hover:bg-purple-800 font-semibold rounded-sm transition-colors">
                         <Info className="w-5 h-5 mr-2" /> Ver detalles
-                      </a>
+                      </Link>
 
                       {isAdmin && (
                         <div className="flex justify-between gap-3 pt-4 border-t border-gray-200 mt-4">

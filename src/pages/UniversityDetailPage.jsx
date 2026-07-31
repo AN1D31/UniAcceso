@@ -33,6 +33,7 @@ const UniversityDetailPage = () => {
         setUniversity({
           id: data.id, nombre: data.name, descripcion: data.description, departamento: data.department,
           nivel: data.level, tipo: data.type, imagen: data.image_url, url: data.website_url,
+          misionVision: data.source_metadata?.mision_y_vision,
         });
       });
 
@@ -221,9 +222,15 @@ const UniversityDetailPage = () => {
           <section id="mision">
             <h2 className="text-base font-semibold text-gray-900 mb-3">Misión y Visión</h2>
             <div className="bg-white p-6 border border-gray-200">
-              <p className="text-gray-700 leading-relaxed italic border-l-4 border-gray-300 pl-4 bg-gray-50 py-3">
-                Esta institución no ha proporcionado una misión específica en los registros de datos abiertos actuales.
-              </p>
+              {university.misionVision ? (
+                <p className="text-gray-700 leading-relaxed whitespace-pre-line border-l-4 border-purple-200 pl-4 bg-gray-50 py-3">
+                  {university.misionVision}
+                </p>
+              ) : (
+                <p className="text-gray-700 leading-relaxed italic border-l-4 border-gray-300 pl-4 bg-gray-50 py-3">
+                  Esta institución no ha proporcionado una misión específica en los registros de datos abiertos actuales.
+                </p>
+              )}
             </div>
           </section>
         </div>
