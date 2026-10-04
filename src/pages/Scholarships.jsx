@@ -82,7 +82,8 @@ const Scholarships = () => {
   async function fetchScholarships() {
     const { data, error } = await supabase
       .from('scholarships')
-      .select('*');
+      .select('*')
+      .order('id', { ascending: false });
 
     if (error) {
       console.error('Error de Supabase:', error.message, error.details, error.hint);
@@ -124,7 +125,7 @@ const Scholarships = () => {
 
       // Payload alineado a las columnas reales de `scholarships`.
       // university_id es opcional: se envía null si no se elige universidad.
-      const { error } = await supabase
+      const { data: created, error } = await supabase
         .from('scholarships')
         .insert({
           name: scholarship.name,
@@ -144,10 +145,14 @@ const Scholarships = () => {
           coverage: nullIfEmpty(scholarship.coverage),
           is_active: true,
           image_url: nullIfEmpty(imageUrl)
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
+      // Se agrega al inicio de la lista sin esperar al refetch.
+      setScholarships(prev => [created, ...prev]);
       fetchScholarships();
       setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: '' });
       setTypeModal(null);
@@ -227,8 +232,9 @@ const Scholarships = () => {
       (s.name && s.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
       (s.description && s.description.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesLocation = 
-      s.location && s.location.toLowerCase().includes(locationFilter.toLowerCase());
+    // Sin filtro de ubicación no se descarta nada: las becas nuevas no traen `location`.
+    const matchesLocation = !locationFilter ||
+      (s.location && s.location.toLowerCase().includes(locationFilter.toLowerCase()));
     
     return matchesSearch && matchesLocation;
   });
