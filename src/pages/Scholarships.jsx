@@ -47,10 +47,10 @@ const Scholarships = () => {
   const [scholarships, setScholarships] = useState([]);
   const [universities, setUniversities] = useState([]);
   const [scholarship, setScholarship] = useState({
-    name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: ''
+    name: '', url: '', description: '', requirements: '', location: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: ''
   });
   const [scholarship2, setScholarship2] = useState({
-    id: '', name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: ''
+    id: '', name: '', url: '', description: '', requirements: '', location: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: ''
   });
 
   const [typeModal, setTypeModal] = useState(null);
@@ -132,6 +132,7 @@ const Scholarships = () => {
           url: nullIfEmpty(scholarship.url),
           description: nullIfEmpty(scholarship.description),
           requirements: nullIfEmpty(scholarship.requirements),
+          location: nullIfEmpty(scholarship.location),
           start_date: nullIfEmpty(scholarship.start_date),
           finish_date: nullIfEmpty(scholarship.finish_date),
           university_id: scholarship.university_id ? parseInt(scholarship.university_id, 10) : null,
@@ -154,7 +155,7 @@ const Scholarships = () => {
       // Se agrega al inicio de la lista sin esperar al refetch.
       setScholarships(prev => [created, ...prev]);
       fetchScholarships();
-      setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: '' });
+      setScholarship({ name: '', url: '', description: '', requirements: '', location: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: '' });
       setTypeModal(null);
       setFile(null);
     } catch (error) {
@@ -184,7 +185,7 @@ const Scholarships = () => {
       if (sch.id === scholarshipId) {
         setScholarship2({
           id: sch.id, name: sch.name, url: sch.url || '',
-          description: sch.description || '', requirements: sch.requirements || '',
+          description: sch.description || '', requirements: sch.requirements || '', location: sch.location || '',
           start_date: sch.start_date || '', finish_date: sch.finish_date || '',
           university_id: sch.university_id || '', image_url: sch.image_url || '',
           amount: sch.amount ?? '', coverage: sch.coverage || ''
@@ -207,6 +208,7 @@ const Scholarships = () => {
           url: nullIfEmpty(scholarship2.url),
           description: nullIfEmpty(scholarship2.description),
           requirements: nullIfEmpty(scholarship2.requirements),
+          location: nullIfEmpty(scholarship2.location),
           start_date: nullIfEmpty(scholarship2.start_date),
           finish_date: nullIfEmpty(scholarship2.finish_date),
           university_id: scholarship2.university_id ? parseInt(scholarship2.university_id, 10) : null,
@@ -410,6 +412,8 @@ const Scholarships = () => {
 
                 <input type="url" placeholder="URL oficial" name="url" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.url : scholarship.url} className="border border-gray-300 bg-white focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none p-3 rounded-sm w-full font-medium" />
                 <textarea placeholder="Descripción detallada" name="description" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.description : scholarship.description} rows="3" className="border border-gray-300 bg-white focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none p-3 rounded-sm w-full resize-none font-medium text-gray-700" />
+                <input type="text" placeholder="Ubicación (Ej. Bogotá, Colombia)" name="location" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.location : scholarship.location} className="border border-gray-300 bg-white focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none p-3 rounded-sm w-full font-medium text-gray-700" />
+                <textarea placeholder="Requisitos" name="requirements" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.requirements : scholarship.requirements} rows="4" className="border border-gray-300 bg-white focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none p-3 rounded-sm w-full font-medium text-gray-700 resize-none" />
 
                 <div>
                   <label className="text-xs text-gray-700 font-semibold uppercase tracking-wider mb-1 block">Universidad asociada (opcional)</label>
