@@ -414,7 +414,7 @@ const Scholarships = () => {
                 <div>
                   <label className="text-xs text-gray-700 font-semibold uppercase tracking-wider mb-1 block">Universidad asociada (opcional)</label>
                   <select name="university_id" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.university_id : scholarship.university_id} className="border border-gray-300 bg-white focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none p-3 rounded-sm w-full font-medium text-gray-700">
-                    <option value="">Sin universidad</option>
+                    <option value="">Sin universidad asociada</option>
                     {universities.map(u => (
                       <option key={u.id} value={u.id}>{u.name}</option>
                     ))}
