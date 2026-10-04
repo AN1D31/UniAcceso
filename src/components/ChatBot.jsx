@@ -1,8 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Bot, GraduationCap, Award, RotateCcw, X } from "lucide-react";
+import { Bot, GraduationCap, Award, RotateCcw, Loader2 } from "lucide-react";
 import { useChatBot } from "../hooks/useChatBot";
 import { COVERAGE_LABELS } from "../utils/chatBotFlow";
+
+function BotAvatar() {
+  return (
+    <div className="w-8 h-8 rounded-sm bg-purple-700 flex items-center justify-center shrink-0">
+      <Bot className="w-5 h-5 text-white" />
+    </div>
+  );
+}
 
 function ResultsList({ results }) {
   return (
@@ -15,7 +23,7 @@ function ResultsList({ results }) {
           <ul className="space-y-1">
             {results.universities.map((university) => (
               <li key={university.id}>
-                <Link to={`/universidades/${university.id}`} className="block rounded-sm border border-gray-200 bg-white px-3 py-2 hover:border-purple-600 transition-colors">
+                <Link to={`/universidades/${university.id}`} className="block border border-gray-200 bg-white px-3 py-2 hover:border-purple-600 transition-colors">
                   <span className="block text-sm font-semibold text-gray-900">{university.name}</span>
                   {university.location && <span className="block text-xs text-gray-500">{university.location}</span>}
                 </Link>
@@ -32,7 +40,7 @@ function ResultsList({ results }) {
           <ul className="space-y-1">
             {results.scholarships.map((scholarship) => (
               <li key={scholarship.id}>
-                <Link to={`/becas/${scholarship.id}`} className="block rounded-sm border border-gray-200 bg-white px-3 py-2 hover:border-purple-600 transition-colors">
+                <Link to={`/becas/${scholarship.id}`} className="block border border-gray-200 bg-white px-3 py-2 hover:border-purple-600 transition-colors">
                   <span className="block text-sm font-semibold text-gray-900">{scholarship.name}</span>
                   <span className="block text-xs text-gray-500">
                     {[COVERAGE_LABELS[scholarship.coverage], scholarship.university].filter(Boolean).join(" · ")}
@@ -47,81 +55,66 @@ function ResultsList({ results }) {
   );
 }
 
+// Embedded, click-only vocational test. Fills the height of its parent container.
 const ChatBot = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const { messages, options, isSearching, isFinished, selectOption, restart } = useChatBot();
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen) bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, options, isSearching, isOpen]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, options, isSearching]);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
-      {isOpen && (
-        <div className="w-[calc(100vw-2rem)] max-w-sm h-[32rem] max-h-[calc(100vh-6rem)] flex flex-col bg-white border border-gray-200 rounded-sm shadow-xl">
-          <div className="flex items-center justify-between bg-purple-600 text-white px-4 py-3">
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5" />
-              <span className="font-semibold text-sm">Orientador UniAcceso</span>
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar mb-4">
+        {messages.map((message) => (
+          <div key={message.id} className={`flex gap-3 ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+            {message.sender === "bot" && <BotAvatar />}
+            <div
+              className={`max-w-[80%] text-sm p-3 font-medium ${
+                message.sender === "user"
+                  ? "bg-purple-700 text-white"
+                  : "bg-white text-gray-800 border border-gray-200 leading-relaxed"
+              }`}
+            >
+              <p>{message.text}</p>
+              {message.results && <ResultsList results={message.results} />}
             </div>
-            <button onClick={() => setIsOpen(false)} aria-label="Cerrar chat" className="hover:bg-purple-700 rounded-sm p-1 transition-colors">
-              <X className="w-4 h-4" />
-            </button>
           </div>
+        ))}
 
-          <div className="flex-1 overflow-y-auto bg-gray-50 p-4 space-y-3">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[85%] rounded-sm px-3 py-2 text-sm ${
-                    message.sender === "user"
-                      ? "bg-purple-600 text-white"
-                      : "bg-white border border-gray-200 text-gray-800"
-                  }`}
-                >
-                  <p>{message.text}</p>
-                  {message.results && <ResultsList results={message.results} />}
-                </div>
-              </div>
-            ))}
-            {isSearching && (
-              <div className="flex justify-start">
-                <div className="rounded-sm border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">Buscando opciones para ti...</div>
-              </div>
-            )}
-            <div ref={bottomRef} />
+        {isSearching && (
+          <div className="flex gap-3 justify-start">
+            <BotAvatar />
+            <div className="bg-white text-gray-600 text-sm p-3 border border-gray-200 font-medium flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> unIA está buscando opciones para ti...
+            </div>
           </div>
+        )}
 
-          <div className="border-t border-gray-200 bg-white p-3">
-            {isFinished ? (
-              <button onClick={restart} className="w-full flex items-center justify-center gap-2 rounded-sm bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors">
-                <RotateCcw className="w-4 h-4" /> Volver a empezar
+        <div ref={bottomRef} />
+      </div>
+
+      <div className="border-t border-gray-200 pt-4">
+        {isFinished ? (
+          <button onClick={restart} className="w-full flex items-center justify-center gap-2 bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 rounded-sm transition-colors">
+            <RotateCcw className="w-4 h-4" /> Volver a empezar
+          </button>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {options.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => selectOption(option)}
+                disabled={isSearching}
+                className="bg-white border border-purple-700 text-purple-700 hover:bg-purple-700 hover:text-white font-semibold text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
+              >
+                {option.label}
               </button>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {options.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() => selectOption(option)}
-                    className="rounded-sm border border-purple-600 px-3 py-1.5 text-sm font-medium text-purple-700 hover:bg-purple-600 hover:text-white transition-colors"
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
-        </div>
-      )}
-
-      <button
-        onClick={() => setIsOpen((open) => !open)}
-        aria-label={isOpen ? "Cerrar chat" : "Abrir orientador vocacional"}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 transition-colors"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Bot className="w-6 h-6" />}
-      </button>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Menu, X, UserCircle, LogOut } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Menu, X, UserCircle, LogOut, Bot } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../createClient";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [session, setSession] = useState(null);
 
@@ -30,6 +31,9 @@ const Navbar = () => {
     { to: "/contacto", label: "Contáctanos" }
   ];
 
+  // The advisor lives on the contact page, so its shortcut is hidden while the user is there.
+  const showAdvisorLink = pathname !== "/contacto";
+
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
@@ -47,6 +51,12 @@ const Navbar = () => {
               {item.label}
             </Link>
           ))}
+
+          {showAdvisorLink && (
+            <Link to="/contacto" className="flex items-center gap-1.5 bg-purple-700 text-white px-3 py-1.5 rounded-sm font-semibold text-sm hover:bg-purple-800 transition-colors">
+              <Bot className="w-4 h-4" /> Orientador unIA
+            </Link>
+          )}
 
           <div className="border-l border-gray-200 pl-6 flex items-center space-x-3">
             {session ? (
@@ -101,6 +111,16 @@ const Navbar = () => {
                 {item.label}
               </Link>
             ))}
+
+            {showAdvisorLink && (
+              <Link
+                to="/contacto"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-purple-700 hover:text-purple-800 font-semibold text-base p-3 rounded-sm hover:bg-gray-50 transition-colors"
+              >
+                <Bot className="w-5 h-5" /> Orientador unIA
+              </Link>
+            )}
 
             {session && (
               <button
