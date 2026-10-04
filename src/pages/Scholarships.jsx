@@ -82,7 +82,8 @@ const Scholarships = () => {
   async function fetchScholarships() {
     const { data, error } = await supabase
       .from('scholarships')
-      .select('*');
+      .select('*')
+      .order('id', { ascending: false });
 
     if (error) {
       console.error('Error de Supabase:', error.message, error.details, error.hint);
@@ -123,9 +124,8 @@ const Scholarships = () => {
       if (file) imageUrl = await uploadScholarshipImage(file);
 
       // Payload alineado a las columnas reales de `scholarships`.
-      // university_id/sponsor_id: la BD exige al menos uno no nulo (constraint
-      // at_least_one_sponsor); este formulario solo permite elegir universidad.
-      const { error } = await supabase
+      // university_id es opcional: se envía null si no se elige universidad.
+      const { data: created, error } = await supabase
         .from('scholarships')
         .insert({
           name: scholarship.name,
@@ -134,7 +134,7 @@ const Scholarships = () => {
           requirements: nullIfEmpty(scholarship.requirements),
           start_date: nullIfEmpty(scholarship.start_date),
           finish_date: nullIfEmpty(scholarship.finish_date),
-          university_id: parseInt(scholarship.university_id, 10),
+          university_id: scholarship.university_id ? parseInt(scholarship.university_id, 10) : null,
           program_id: null,
           country_id: null,
           city_id: null,
@@ -145,10 +145,14 @@ const Scholarships = () => {
           coverage: nullIfEmpty(scholarship.coverage),
           is_active: true,
           image_url: nullIfEmpty(imageUrl)
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
+      // Se agrega al inicio de la lista sin esperar al refetch.
+      setScholarships(prev => [created, ...prev]);
       fetchScholarships();
       setScholarship({ name: '', url: '', description: '', requirements: '', start_date: '', finish_date: '', university_id: '', image_url: '', amount: '', coverage: '' });
       setTypeModal(null);
@@ -205,7 +209,7 @@ const Scholarships = () => {
           requirements: nullIfEmpty(scholarship2.requirements),
           start_date: nullIfEmpty(scholarship2.start_date),
           finish_date: nullIfEmpty(scholarship2.finish_date),
-          university_id: parseInt(scholarship2.university_id, 10),
+          university_id: scholarship2.university_id ? parseInt(scholarship2.university_id, 10) : null,
           amount: nullIfEmpty(scholarship2.amount) === null ? null : parseFloat(scholarship2.amount),
           coverage: nullIfEmpty(scholarship2.coverage),
           image_url: nullIfEmpty(imageUrl)
@@ -228,8 +232,9 @@ const Scholarships = () => {
       (s.name && s.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
       (s.description && s.description.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesLocation = 
-      s.location && s.location.toLowerCase().includes(locationFilter.toLowerCase());
+    // Sin filtro de ubicación no se descarta nada: las becas nuevas no traen `location`.
+    const matchesLocation = !locationFilter ||
+      (s.location && s.location.toLowerCase().includes(locationFilter.toLowerCase()));
     
     return matchesSearch && matchesLocation;
   });
@@ -407,9 +412,9 @@ const Scholarships = () => {
                 <textarea placeholder="Descripción detallada" name="description" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.description : scholarship.description} rows="3" className="border border-gray-300 bg-white focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none p-3 rounded-sm w-full resize-none font-medium text-gray-700" />
 
                 <div>
-                  <label className="text-xs text-gray-700 font-semibold uppercase tracking-wider mb-1 block">Universidad asociada</label>
-                  <select name="university_id" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.university_id : scholarship.university_id} className="border border-gray-300 bg-white focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none p-3 rounded-sm w-full font-medium text-gray-700" required>
-                    <option value="" disabled>Selecciona una universidad</option>
+                  <label className="text-xs text-gray-700 font-semibold uppercase tracking-wider mb-1 block">Universidad asociada (opcional)</label>
+                  <select name="university_id" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.university_id : scholarship.university_id} className="border border-gray-300 bg-white focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none p-3 rounded-sm w-full font-medium text-gray-700">
+                    <option value="">Sin universidad asociada</option>
                     {universities.map(u => (
                       <option key={u.id} value={u.id}>{u.name}</option>
                     ))}
