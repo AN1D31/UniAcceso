@@ -13,7 +13,27 @@ const formatDeadline = (dateStr) => {
   return `${d}/${m}/${y}`;
 };
 
-const getCoverageInfo = (scholarship) => {
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+// Sube la imagen al bucket `scholarships` y devuelve su URL pública.
+// Se envía contentType explícito para que el bucket reciba el MIME correcto.
+const uploadScholarshipImage = async (file) => {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    throw new Error('Formato de imagen no permitido. Usa JPG, PNG o WEBP.');
+  }
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('scholarships')
+    .upload(fileName, file, { contentType: file.type });
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from('scholarships').getPublicUrl(fileName);
+  return data.publicUrl;
+};
+
+const getCoverageInfo =(scholarship) => {
   const isFree = !scholarship.amount || Number(scholarship.amount) === 0;
   const isFullCoverage = scholarship.coverage === 'total' || scholarship.coverage === 'matricula';
 
@@ -100,21 +120,7 @@ const Scholarships = () => {
     try {
       let imageUrl = '';
 
-      if (file) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('scholarships')
-          .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-          .from('scholarships')
-          .getPublicUrl(fileName);
-        imageUrl = publicUrlData.publicUrl;
-      }
+      if (file) imageUrl = await uploadScholarshipImage(file);
 
       // Payload alineado a las columnas reales de `scholarships`.
       // university_id/sponsor_id: la BD exige al menos uno no nulo (constraint
@@ -188,21 +194,7 @@ const Scholarships = () => {
     try {
       let imageUrl = scholarship2.image_url;
 
-      if (file) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('scholarships')
-          .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-          .from('scholarships')
-          .getPublicUrl(fileName);
-        imageUrl = publicUrlData.publicUrl;
-      }
+      if (file) imageUrl = await uploadScholarshipImage(file);
 
       const { error } = await supabase
         .from('scholarships')
@@ -408,7 +400,7 @@ const Scholarships = () => {
 
                 <div className="border border-gray-300 p-3 rounded-sm bg-gray-50">
                   <label className="text-xs text-gray-700 font-semibold uppercase tracking-wider mb-2 block">Imagen / Banner</label>
-                  <input type="file" onChange={(e) => setFile(e.target.files[0])} name="image" className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer transition-colors" />
+                  <input type="file" accept="image/jpeg,image/png,image/webp,.webp" onChange={(e) => setFile(e.target.files[0])} name="image" className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer transition-colors" />
                 </div>
 
                 <input type="url" placeholder="URL oficial" name="url" onChange={typeModal === 'crear' ? handleChange : handleChange2} defaultValue={typeModal === 'editar' ? scholarship2.url : scholarship.url} className="border border-gray-300 bg-white focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none p-3 rounded-sm w-full font-medium" />
