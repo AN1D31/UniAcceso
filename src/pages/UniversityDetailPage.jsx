@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MapPin, Search, Clock, Monitor, Target, BookOpen, ArrowLeft } from 'lucide-react';
 import { supabase } from '../createClient';
 
@@ -11,6 +11,7 @@ const SECTIONS = [
 
 const UniversityDetailPage = () => {
   const { universityId } = useParams();
+  const navigate = useNavigate();
   const [university, setUniversity] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [programs, setPrograms] = useState([]);
@@ -19,6 +20,13 @@ const UniversityDetailPage = () => {
   const [modalityFilter, setModalityFilter] = useState('');
   const [activeSectionId, setActiveSectionId] = useState(SECTIONS[0].id);
   const contentRef = useRef(null);
+
+  // Go back in history so the directory keeps its search, filters and page (stored in its URL).
+  // When the page was opened directly there is no previous entry, so fall back to the directory.
+  const handleGoBack = () => {
+    if (window.history.state?.idx > 0) navigate(-1);
+    else navigate('/explorar');
+  };
 
   useEffect(() => {
     setUniversity(null);
@@ -91,9 +99,9 @@ const UniversityDetailPage = () => {
     <div className="min-h-screen bg-white">
       <div className="border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <Link to="/explorar" className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-purple-700 mb-6">
+          <button onClick={handleGoBack} className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-purple-700 mb-6">
             <ArrowLeft className="w-4 h-4" /> Volver al explorador
-          </Link>
+          </button>
           <div className="flex items-center gap-6">
             <div className="w-24 h-24 bg-white border border-gray-200 flex items-center justify-center p-2 shrink-0">
               <img
