@@ -15,8 +15,32 @@ const FILTER_PARAMS = {
   tipo: "type",
 };
 
+const OFFERS_PAGE_SIZE = 1000; // Supabase returns at most 1000 rows per query
+
+// Lowercases and strips accents so "Ingeniería" matches "ingenieria".
+const normalizeText = (text) =>
+  String(text ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+async function fetchAllRows(table, columns) {
+  const rows = [];
+  for (let from = 0; ; from += OFFERS_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(columns)
+      .order(columns.split(",")[0].trim(), { ascending: true })
+      .range(from, from + OFFERS_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < OFFERS_PAGE_SIZE) break;
+  }
+  return rows;
+}
+
 const ExplorarPage = () => {
   const [universities, setUniversities] = useState([]);
+  // Normalized program/career names offered by each university (id -> string[]).
+  // Loaded the first time the career filter is used.
+  const [offersByUniversity, setOffersByUniversity] = useState(null);
   // Filters and current page live in the URL so they survive navigating to a detail page and back.
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -204,19 +228,53 @@ const ExplorarPage = () => {
     setFilters({ nombre: "", departamento: "", carrera: "", nivel: "", tipo: "" });
   };
 
-  // `carrera` is kept in the URL but does not filter the directory yet, so it does not count here.
-  const hasSearched = ["nombre", "departamento", "nivel", "tipo"].some((key) => filters[key].trim() !== "");
+  const careerTerm = normalizeText(filters.carrera);
+  const isCareerLoading = careerTerm !== "" && offersByUniversity === null;
+
+  useEffect(() => {
+    if (careerTerm === "" || offersByUniversity !== null) return;
+
+    let cancelled = false;
+    Promise.all([
+      fetchAllRows("programs", "id, university_id, name"),
+      fetchAllRows("university_careers", "university_id, career"),
+    ])
+      .then(([programs, careers]) => {
+        const offers = new Map();
+        const addOffer = (universityId, name) => {
+          if (!universityId || !name) return;
+          if (!offers.has(universityId)) offers.set(universityId, []);
+          offers.get(universityId).push(normalizeText(name));
+        };
+        programs.forEach((row) => addOffer(row.university_id, row.name));
+        careers.forEach((row) => addOffer(row.university_id, row.career));
+        if (!cancelled) setOffersByUniversity(offers);
+      })
+      .catch((error) => {
+        console.error('Error de Supabase:', error.message, error.details, error.hint);
+        if (!cancelled) setOffersByUniversity(new Map());
+      });
+    return () => { cancelled = true; };
+  }, [careerTerm, offersByUniversity]);
+
+  const hasSearched =
+    ["nombre", "departamento", "nivel", "tipo", "carrera"].some((key) => filters[key].trim() !== "") &&
+    !isCareerLoading;
 
   const filteredData = useMemo(() => {
+    if (isCareerLoading) return [];
     if (!hasSearched) return universities;
     return universities.filter((uni) => {
       const nombreMatch = uni.nombre.toLowerCase().includes(filters.nombre.toLowerCase());
       const deptoMatch = (uni.departamento || "").toLowerCase().includes(filters.departamento.toLowerCase());
       const nivelMatch = filters.nivel === "" || (uni.nivel && uni.nivel.toLowerCase() === filters.nivel.toLowerCase());
       const tipoMatch = filters.tipo === "" || (uni.tipo && uni.tipo.toLowerCase() === filters.tipo.toLowerCase());
-      return nombreMatch && deptoMatch && nivelMatch && tipoMatch;
+      const carreraMatch =
+        careerTerm === "" ||
+        (offersByUniversity?.get(uni.id) ?? []).some((offer) => offer.includes(careerTerm));
+      return nombreMatch && deptoMatch && nivelMatch && tipoMatch && carreraMatch;
     });
-  }, [universities, filters, hasSearched]);
+  }, [universities, filters, hasSearched, isCareerLoading, careerTerm, offersByUniversity]);
 
   const topUniversities = universities.filter(u => u.is_top);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
