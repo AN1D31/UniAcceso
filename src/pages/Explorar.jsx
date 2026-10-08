@@ -1,17 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "../createClient";
 import { GraduationCap, Star, Trophy, Edit, Trash2 } from "lucide-react";
 import FilterSection from "../components/FilterSection";
 import Results from "../components/Results";
 import AdminAddButton from "../components/AdminAddButton";
 
+// Maps each directory filter to its query-string key, e.g. /explorar?search=andes&page=2
+const FILTER_PARAMS = {
+  nombre: "search",
+  departamento: "department",
+  carrera: "career",
+  nivel: "level",
+  tipo: "type",
+};
+
 const ExplorarPage = () => {
   const [universities, setUniversities] = useState([]);
-  const [filters, setFilters] = useState({ nombre: "", departamento: "", nivel: "", tipo: "" });
-  const [filteredData, setFilteredData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasSearched, setHasSearched] = useState(false);
+  // Filters and current page live in the URL so they survive navigating to a detail page and back.
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [isAdmin, setIsAdmin] = useState(false);
   const [typeModal, setTypeModal] = useState(null);
@@ -22,6 +29,40 @@ const ExplorarPage = () => {
   });
 
   const itemsPerPage = 6;
+
+  const filters = useMemo(
+    () => Object.fromEntries(
+      Object.entries(FILTER_PARAMS).map(([filterKey, paramKey]) => [filterKey, searchParams.get(paramKey) ?? ""])
+    ),
+    [searchParams]
+  );
+  const requestedPage = Math.max(parseInt(searchParams.get("page"), 10) || 1, 1);
+
+  // Changing a filter replaces the history entry (so Back does not step through every keystroke)
+  // and returns to the first page.
+  const setFilters = (newFilters) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      Object.entries(FILTER_PARAMS).forEach(([filterKey, paramKey]) => {
+        const value = (newFilters[filterKey] ?? "").trim() === "" ? "" : newFilters[filterKey];
+        if (value) next.set(paramKey, value);
+        else next.delete(paramKey);
+      });
+      next.delete("page");
+      return next;
+    }, { replace: true });
+  };
+
+  // Accepts a page number or an updater function, like a useState setter.
+  const setCurrentPage = (pageOrUpdater) => {
+    const page = typeof pageOrUpdater === "function" ? pageOrUpdater(currentPage) : pageOrUpdater;
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (page > 1) next.set("page", String(page));
+      else next.delete("page");
+      return next;
+    });
+  };
 
   useEffect(() => {
     checkAdminRole();
@@ -47,7 +88,6 @@ const ExplorarPage = () => {
         source_metadata: uni.source_metadata || {}
       }));
       setUniversities(mapped);
-      setFilteredData(mapped);
     } else if (error) {
       console.error('Error de Supabase:', error.message, error.details, error.hint);
     }
@@ -161,30 +201,27 @@ const ExplorarPage = () => {
   };
 
   const handleResetFilters = () => {
-    setFilters({ nombre: "", departamento: "", nivel: "", tipo: "" });
+    setFilters({ nombre: "", departamento: "", carrera: "", nivel: "", tipo: "" });
   };
 
-  useEffect(() => {
-    const isAnyFilterFilled = Object.values(filters).some((value) => value.trim() !== "");
-    if (!isAnyFilterFilled) {
-      setFilteredData(universities);
-      setHasSearched(false);
-    } else {
-      const results = universities.filter((uni) => {
-        const nombreMatch = uni.nombre.toLowerCase().includes(filters.nombre.toLowerCase());
-        const deptoMatch = uni.departamento.toLowerCase().includes(filters.departamento.toLowerCase());
-        const nivelMatch = filters.nivel === "" || (uni.nivel && uni.nivel.toLowerCase() === filters.nivel.toLowerCase());
-        const tipoMatch = filters.tipo === "" || (uni.tipo && uni.tipo.toLowerCase() === filters.tipo.toLowerCase());
-        return nombreMatch && deptoMatch && nivelMatch && tipoMatch;
-      });
-      setFilteredData(results);
-      setHasSearched(true);
-    }
-    setCurrentPage(1);
-  }, [filters, universities]);
+  // `carrera` is kept in the URL but does not filter the directory yet, so it does not count here.
+  const hasSearched = ["nombre", "departamento", "nivel", "tipo"].some((key) => filters[key].trim() !== "");
+
+  const filteredData = useMemo(() => {
+    if (!hasSearched) return universities;
+    return universities.filter((uni) => {
+      const nombreMatch = uni.nombre.toLowerCase().includes(filters.nombre.toLowerCase());
+      const deptoMatch = (uni.departamento || "").toLowerCase().includes(filters.departamento.toLowerCase());
+      const nivelMatch = filters.nivel === "" || (uni.nivel && uni.nivel.toLowerCase() === filters.nivel.toLowerCase());
+      const tipoMatch = filters.tipo === "" || (uni.tipo && uni.tipo.toLowerCase() === filters.tipo.toLowerCase());
+      return nombreMatch && deptoMatch && nivelMatch && tipoMatch;
+    });
+  }, [universities, filters, hasSearched]);
 
   const topUniversities = universities.filter(u => u.is_top);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  // A stale or out-of-range ?page= is clamped for display without rewriting the URL.
+  const currentPage = Math.min(requestedPage, Math.max(totalPages, 1));
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
