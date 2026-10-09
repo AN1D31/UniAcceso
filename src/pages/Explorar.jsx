@@ -310,7 +310,7 @@ const ExplorarPage = () => {
 
         {topUniversities.map((uni) => (
           <div key={uni.id} className="relative h-full bg-white border border-gray-200 flex flex-col outline-none">
-            <div className="h-48 w-full bg-white flex items-center justify-center p-8 border-b border-gray-200 relative overflow-hidden">
+            <div className="h-48 w-full bg-gray-100 flex items-center justify-center p-8 border-b border-gray-200 relative overflow-hidden">
               <img src={uni.imagen || "https://placehold.co/400x200/f3e8ff/7e22ce?text=Sin+Logo"} alt={`Logo ${uni.nombre}`} className="max-h-full max-w-full object-contain" />
             </div>
             <div className="p-6 flex flex-col grow">
