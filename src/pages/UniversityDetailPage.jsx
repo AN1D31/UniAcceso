@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MapPin, Search, Clock, Monitor, Target, BookOpen, ArrowLeft, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { MapPin, Search, Clock, Monitor, Target, BookOpen, ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../createClient';
 import ProgramModal from '../components/ProgramModal';
+import { ensureHttpUrl } from '../utils/url';
 
 const SECTIONS = [
   { id: 'resumen', label: 'Resumen' },
@@ -289,7 +290,19 @@ const UniversityDetailPage = () => {
                 {filteredPrograms.map(prog => (
                   <div key={prog.id} className="bg-white p-4 border border-gray-200 hover:border-purple-300 transition-colors">
                     <h3 className="font-semibold text-gray-800 text-sm mb-2 line-clamp-2" title={prog.name}>
-                      {prog.name}
+                      {/* A program's own link wins; until each one is mapped they inherit the university website. */}
+                      {ensureHttpUrl(prog.url) ?? ensureHttpUrl(university.url) ? (
+                        <a
+                          href={ensureHttpUrl(prog.url) ?? ensureHttpUrl(university.url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-purple-700 hover:underline"
+                        >
+                          {prog.name}
+                        </a>
+                      ) : (
+                        prog.name
+                      )}
                     </h3>
                     <div className="flex items-center gap-4 text-xs font-medium text-gray-500">
                       <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-sm">
@@ -306,11 +319,6 @@ const UniversityDetailPage = () => {
                     </div>
                     {prog.description && (
                       <p className="text-xs text-gray-600 mt-3 line-clamp-2">{prog.description}</p>
-                    )}
-                    {prog.url && (
-                      <a href={prog.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-purple-700 hover:underline mt-3">
-                        <ExternalLink className="w-3 h-3" /> Ver programa
-                      </a>
                     )}
                     {isAdmin && (
                       <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
