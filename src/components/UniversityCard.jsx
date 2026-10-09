@@ -16,7 +16,7 @@ const UniversityCard = ({ university, isAdmin, onEdit, onDelete }) => {
 
   return (
     <article className="relative h-full bg-white border border-gray-200 flex flex-col">
-      <div className="h-32 w-full bg-white flex items-center justify-center p-4 border-b border-gray-200 shrink-0">
+      <div className="h-32 w-full bg-gray-100 flex items-center justify-center p-4 border-b border-gray-200 shrink-0">
         <img
           src={university.imagen || "https://placehold.co/400x200/f3e8ff/7e22ce?text=Sin+Logo"}
           alt={`Logo ${university.nombre}`}
