@@ -5,6 +5,7 @@ import { GraduationCap, Star, Trophy, Edit, Trash2 } from "lucide-react";
 import FilterSection from "../components/FilterSection";
 import Results from "../components/Results";
 import AdminAddButton from "../components/AdminAddButton";
+import { normalizeText } from "../utils/textSearch";
 
 // Maps each directory filter to its query-string key, e.g. /explorar?search=andes&page=2
 const FILTER_PARAMS = {
@@ -16,10 +17,6 @@ const FILTER_PARAMS = {
 };
 
 const OFFERS_PAGE_SIZE = 1000; // Supabase returns at most 1000 rows per query
-
-// Lowercases and strips accents so "Ingeniería" matches "ingenieria".
-const normalizeText = (text) =>
-  String(text ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 async function fetchAllRows(table, columns) {
   const rows = [];
