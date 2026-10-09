@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MapPin, Search, Clock, Monitor, Target, BookOpen, ArrowLeft } from 'lucide-react';
+import { MapPin, Search, Clock, Monitor, Target, BookOpen, ArrowLeft, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import { supabase } from '../createClient';
+import ProgramModal from '../components/ProgramModal';
 
 const SECTIONS = [
   { id: 'resumen', label: 'Resumen' },
@@ -20,6 +21,10 @@ const UniversityDetailPage = () => {
   const [modalityFilter, setModalityFilter] = useState('');
   const [activeSectionId, setActiveSectionId] = useState(SECTIONS[0].id);
   const contentRef = useRef(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  // null = modal closed, 'new' = creating, otherwise the program being edited
+  const [programBeingEdited, setProgramBeingEdited] = useState(null);
+  const [isSavingProgram, setIsSavingProgram] = useState(false);
 
   // Go back in history so the directory keeps its search, filters and page (stored in its URL).
   // When the page was opened directly there is no previous entry, so fall back to the directory.
@@ -27,6 +32,24 @@ const UniversityDetailPage = () => {
     if (window.history.state?.idx > 0) navigate(-1);
     else navigate('/explorar');
   };
+
+  // Management controls are only shown to an authenticated admin; Row Level Security enforces it server-side.
+  useEffect(() => {
+    const checkAdminRole = async (session) => {
+      if (!session?.user) {
+        setIsAdmin(false);
+        return;
+      }
+      const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+      setIsAdmin(data?.role === 'admin');
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => checkAdminRole(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      checkAdminRole(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     setUniversity(null);
@@ -71,6 +94,63 @@ const UniversityDetailPage = () => {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [university]);
+
+  // Converts the modal form into a `programs` row payload; empty optional fields become null.
+  const buildProgramPayload = (form) => ({
+    name: form.name.trim(),
+    level: form.level,
+    modality: form.modality,
+    duration: form.duration === '' ? null : parseInt(form.duration, 10),
+    description: form.description.trim() === '' ? null : form.description.trim(),
+    url: form.url.trim() === '' ? null : form.url.trim(),
+  });
+
+  const createProgram = async (form) => {
+    const { data, error } = await supabase
+      .from('programs')
+      .insert({ ...buildProgramPayload(form), university_id: university.id })
+      .select()
+      .single();
+    if (error) throw error;
+    setPrograms(previous => [data, ...previous]);
+  };
+
+  const updateProgram = async (programId, form) => {
+    const { data, error } = await supabase
+      .from('programs')
+      .update(buildProgramPayload(form))
+      .eq('id', programId)
+      .select()
+      .single(); // fails when RLS blocks the update (0 rows) instead of failing silently
+    if (error) throw error;
+    setPrograms(previous => previous.map(program => (program.id === programId ? data : program)));
+  };
+
+  const deleteProgram = async (program) => {
+    if (!window.confirm(`¿Seguro que deseas eliminar "${program.name}"?`)) return;
+
+    const { data, error } = await supabase.from('programs').delete().eq('id', program.id).select('id');
+    if (error || !data?.length) {
+      console.error('Error de Supabase:', error?.message ?? 'No row deleted (blocked by Row Level Security?)');
+      alert('No se pudo eliminar el programa. Revisa la consola para más detalles.');
+      return;
+    }
+    setPrograms(previous => previous.filter(item => item.id !== program.id));
+  };
+
+  const handleSubmitProgram = async (form) => {
+    setIsSavingProgram(true);
+    try {
+      if (programBeingEdited === 'new') await createProgram(form);
+      else await updateProgram(programBeingEdited.id, form);
+      setProgramBeingEdited(null);
+    } catch (error) {
+      console.error('Error de Supabase:', error.message, error.details, error.hint);
+      alert('No se pudo guardar el programa. Revisa la consola para más detalles.');
+    } finally {
+      setIsSavingProgram(false);
+    }
+  };
 
   if (notFound) {
     return (
@@ -196,8 +276,16 @@ const UniversityDetailPage = () => {
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
               </div>
-            ) : filteredPrograms.length > 0 ? (
+            ) : filteredPrograms.length > 0 || isAdmin ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {isAdmin && (
+                  <button
+                    onClick={() => setProgramBeingEdited('new')}
+                    className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 hover:border-purple-400 text-purple-700 font-semibold text-sm transition-colors min-h-20"
+                  >
+                    <Plus className="w-4 h-4" /> Añadir Programa
+                  </button>
+                )}
                 {filteredPrograms.map(prog => (
                   <div key={prog.id} className="bg-white p-4 border border-gray-200 hover:border-purple-300 transition-colors">
                     <h3 className="font-semibold text-gray-800 text-sm mb-2 line-clamp-2" title={prog.name}>
@@ -216,6 +304,24 @@ const UniversityDetailPage = () => {
                         </span>
                       )}
                     </div>
+                    {prog.description && (
+                      <p className="text-xs text-gray-600 mt-3 line-clamp-2">{prog.description}</p>
+                    )}
+                    {prog.url && (
+                      <a href={prog.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-purple-700 hover:underline mt-3">
+                        <ExternalLink className="w-3 h-3" /> Ver programa
+                      </a>
+                    )}
+                    {isAdmin && (
+                      <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <button onClick={() => setProgramBeingEdited(prog)} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
+                          <Pencil className="w-3 h-3" /> Editar
+                        </button>
+                        <button onClick={() => deleteProgram(prog)} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-red-600 bg-white border border-red-200 rounded-sm hover:bg-red-50 transition-colors">
+                          <Trash2 className="w-3 h-3" /> Eliminar
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -243,6 +349,16 @@ const UniversityDetailPage = () => {
           </section>
         </div>
       </div>
+
+      {programBeingEdited && (
+        <ProgramModal
+          key={programBeingEdited === 'new' ? 'new' : programBeingEdited.id}
+          program={programBeingEdited === 'new' ? null : programBeingEdited}
+          isSaving={isSavingProgram}
+          onSubmit={handleSubmitProgram}
+          onClose={() => setProgramBeingEdited(null)}
+        />
+      )}
     </div>
   );
 };
