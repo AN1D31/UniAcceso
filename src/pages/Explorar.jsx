@@ -5,7 +5,7 @@ import { GraduationCap, Star, Trophy, Edit, Trash2 } from "lucide-react";
 import FilterSection from "../components/FilterSection";
 import Results from "../components/Results";
 import AdminAddButton from "../components/AdminAddButton";
-import { normalizeText } from "../utils/textSearch";
+import { normalizeText, fuzzyMatches } from "../utils/textSearch";
 
 // Maps each directory filter to its query-string key, e.g. /explorar?search=andes&page=2
 const FILTER_PARAMS = {
@@ -232,25 +232,25 @@ const ExplorarPage = () => {
     if (careerTerm === "" || offersByUniversity !== null) return;
 
     let cancelled = false;
-    Promise.all([
+    // `university_careers` is optional (it may be empty or restricted by Row Level Security),
+    // so a failure there must not hide the results coming from `programs`.
+    Promise.allSettled([
       fetchAllRows("programs", "id, university_id, name"),
       fetchAllRows("university_careers", "university_id, career"),
-    ])
-      .then(([programs, careers]) => {
-        const offers = new Map();
-        const addOffer = (universityId, name) => {
-          if (!universityId || !name) return;
-          if (!offers.has(universityId)) offers.set(universityId, []);
-          offers.get(universityId).push(normalizeText(name));
-        };
-        programs.forEach((row) => addOffer(row.university_id, row.name));
-        careers.forEach((row) => addOffer(row.university_id, row.career));
-        if (!cancelled) setOffersByUniversity(offers);
-      })
-      .catch((error) => {
-        console.error('Error de Supabase:', error.message, error.details, error.hint);
-        if (!cancelled) setOffersByUniversity(new Map());
-      });
+    ]).then(([programs, careers]) => {
+      if (programs.status === "rejected") {
+        console.error('Error de Supabase:', programs.reason?.message);
+      }
+      const offers = new Map();
+      const addOffer = (universityId, name) => {
+        if (!universityId || !name) return;
+        if (!offers.has(universityId)) offers.set(universityId, new Set());
+        offers.get(universityId).add(name);
+      };
+      if (programs.status === "fulfilled") programs.value.forEach((row) => addOffer(row.university_id, row.name));
+      if (careers.status === "fulfilled") careers.value.forEach((row) => addOffer(row.university_id, row.career));
+      if (!cancelled) setOffersByUniversity(offers);
+    });
     return () => { cancelled = true; };
   }, [careerTerm, offersByUniversity]);
 
@@ -261,16 +261,23 @@ const ExplorarPage = () => {
   const filteredData = useMemo(() => {
     if (isCareerLoading) return [];
     if (!hasSearched) return universities;
-    return universities.filter((uni) => {
+    const results = [];
+    universities.forEach((uni) => {
       const nombreMatch = uni.nombre.toLowerCase().includes(filters.nombre.toLowerCase());
       const deptoMatch = (uni.departamento || "").toLowerCase().includes(filters.departamento.toLowerCase());
       const nivelMatch = filters.nivel === "" || (uni.nivel && uni.nivel.toLowerCase() === filters.nivel.toLowerCase());
       const tipoMatch = filters.tipo === "" || (uni.tipo && uni.tipo.toLowerCase() === filters.tipo.toLowerCase());
-      const carreraMatch =
-        careerTerm === "" ||
-        (offersByUniversity?.get(uni.id) ?? []).some((offer) => offer.includes(careerTerm));
-      return nombreMatch && deptoMatch && nivelMatch && tipoMatch && carreraMatch;
+      if (!(nombreMatch && deptoMatch && nivelMatch && tipoMatch)) return;
+
+      if (careerTerm === "") {
+        results.push(uni);
+        return;
+      }
+      // Keep only universities offering a matching program and attach those programs to the card.
+      const matchedPrograms = [...(offersByUniversity?.get(uni.id) ?? [])].filter((name) => fuzzyMatches(name, filters.carrera));
+      if (matchedPrograms.length) results.push({ ...uni, matchedPrograms });
     });
+    return results;
   }, [universities, filters, hasSearched, isCareerLoading, careerTerm, offersByUniversity]);
 
   const topUniversities = universities.filter(u => u.is_top);
