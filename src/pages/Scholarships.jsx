@@ -13,7 +13,7 @@ const formatDeadline = (dateStr) => {
   return `${d}/${m}/${y}`;
 };
 
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
 
 // Sube la imagen al bucket `scholarships` y devuelve su URL pública.
 // Se envía contentType explícito para que el bucket reciba el MIME correcto.
