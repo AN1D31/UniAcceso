@@ -1,6 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { MapPin, GraduationCap, Target, Landmark, ExternalLink, Edit, Trash2 } from "lucide-react";
+import { ensureHttpUrl } from "../utils/url";
+
+const MAX_LISTED_PROGRAMS = 3;
 
 const UniversityCard = ({ university, isAdmin, onEdit, onDelete }) => {
   const getValidUrl = (url) => {
@@ -12,8 +15,8 @@ const UniversityCard = ({ university, isAdmin, onEdit, onDelete }) => {
   };
 
   return (
-    <article className="relative h-full bg-gray border border-gray-200 flex flex-col">
-      <div className="h-32 w-full bg-gray flex items-center justify-center p-4 border-b border-gray-200 shrink-0">
+    <article className="relative h-full bg-white border border-gray-200 flex flex-col">
+      <div className="h-32 w-full bg-white flex items-center justify-center p-4 border-b border-gray-200 shrink-0">
         <img
           src={university.imagen || "https://placehold.co/400x200/f3e8ff/7e22ce?text=Sin+Logo"}
           alt={`Logo ${university.nombre}`}
@@ -51,6 +54,32 @@ const UniversityCard = ({ university, isAdmin, onEdit, onDelete }) => {
             <span className="text-sm text-gray-600">{university.tipo || 'Pública'}</span>
           </li>
         </ul>
+
+        {university.matchedPrograms?.length > 0 && (
+          <div className="mb-5 bg-purple-50 border border-purple-200 p-3">
+            <p className="text-xs font-semibold text-purple-800 uppercase tracking-wider mb-2">Programas que coinciden</p>
+            <ul className="space-y-1">
+              {university.matchedPrograms.slice(0, MAX_LISTED_PROGRAMS).map((programName) => (
+                <li key={programName}>
+                  {/* Temporarily every program links to the university website. */}
+                  <a
+                    href={ensureHttpUrl(university.url) ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-purple-700 hover:underline"
+                  >
+                    {programName}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            {university.matchedPrograms.length > MAX_LISTED_PROGRAMS && (
+              <p className="text-xs text-purple-700 mt-2">
+                y {university.matchedPrograms.length - MAX_LISTED_PROGRAMS} más
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="mt-auto flex flex-col gap-2">
           <Link
