@@ -15,17 +15,21 @@ function BotAvatar() {
 function ResultsList({ results }) {
   return (
     <div className="mt-3 space-y-3">
-      {results.universities.length > 0 && (
+      {results.programs.length > 0 && (
         <div>
           <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
-            <GraduationCap className="w-3.5 h-3.5" /> Universidades
+            <GraduationCap className="w-3.5 h-3.5" /> Programas ({results.programs.length} de {results.totalPrograms})
           </p>
           <ul className="space-y-1">
-            {results.universities.map((university) => (
-              <li key={university.id}>
-                <Link to={`/universidades/${university.id}`} className="block border border-gray-200 bg-white px-3 py-2 hover:border-purple-600 transition-colors">
-                  <span className="block text-sm font-semibold text-gray-900">{university.name}</span>
-                  {university.location && <span className="block text-xs text-gray-500">{university.location}</span>}
+            {results.programs.map((program) => (
+              <li key={program.id}>
+                <Link to={`/universidades/${program.universityId}`} className="block border border-gray-200 bg-white px-3 py-2 hover:border-purple-600 transition-colors">
+                  <span className="block text-sm font-semibold text-gray-900">{program.name}</span>
+                  <span className="block text-xs text-gray-500">
+                    {[program.university, program.level, program.modality, program.duration > 0 ? `${program.duration} semestres` : null]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
                 </Link>
               </li>
             ))}
@@ -77,7 +81,7 @@ const ChatBot = () => {
                   : "bg-white text-gray-800 border border-gray-200 leading-relaxed"
               }`}
             >
-              <p>{message.text}</p>
+              <p className="whitespace-pre-line">{message.text}</p>
               {message.results && <ResultsList results={message.results} />}
             </div>
           </div>

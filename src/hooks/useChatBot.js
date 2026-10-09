@@ -1,79 +1,99 @@
 import { useCallback, useState } from "react";
-import { FLOW_STEPS, WELCOME_MESSAGE } from "../utils/chatBotFlow";
+import { NODES, WELCOME_MESSAGE, addScores, buildProfile } from "../utils/chatBotFlow";
 import { searchEducationalOffer } from "../utils/chatBotSearch";
 
 const ERROR_MESSAGE = "Tuve un problema al consultar la información. Por favor, intenta de nuevo.";
 const EMPTY_MESSAGE =
-  "No encontré resultados con esas opciones. Prueba de nuevo eligiendo otra área o modalidad.";
-const RESULTS_MESSAGE = "¡Listo! Esto es lo que encontré para ti:";
+  "No encontré programas que coincidan con esas preferencias. Prueba de nuevo con otra área o con filtros más amplios.";
+const RESULTS_MESSAGE = "¡Listo! Estos son los programas disponibles que coinciden con tus preferencias:";
+
+const EMPTY_ANSWERS = { areas: [], modality: "any", level: "any", funding: "no_scholarship" };
 
 let lastMessageId = 0;
 const createMessage = (sender, content) => ({ id: ++lastMessageId, sender, ...content });
 
 const buildInitialMessages = () => [
   createMessage("bot", { text: WELCOME_MESSAGE }),
-  createMessage("bot", { text: FLOW_STEPS[0].question }),
+  createMessage("bot", { text: NODES.start.question }),
 ];
 
-// Finite state machine: one state per step of FLOW_STEPS, then "searching" and "done".
+// Finite state machine driven by the NODES graph. `nodeId` is the question currently shown;
+// `status` is "asking" while waiting for a click, "searching" during the query and "done" after it.
 export function useChatBot() {
   const [messages, setMessages] = useState(buildInitialMessages);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [selections, setSelections] = useState({});
+  const [nodeId, setNodeId] = useState("start");
+  const [answers, setAnswers] = useState(EMPTY_ANSWERS);
+  const [quizScores, setQuizScores] = useState({});
   const [status, setStatus] = useState("asking"); // "asking" | "searching" | "done"
 
-  const currentStep = status === "asking" ? FLOW_STEPS[stepIndex] : null;
+  const runSearch = useCallback(async (finalAnswers) => {
+    setStatus("searching");
+    const result = await searchEducationalOffer(finalAnswers);
 
-  const runSearch = useCallback(
-    async (finalSelections) => {
-      setStatus("searching");
-      const result = await searchEducationalOffer(finalSelections);
-
-      let botMessage;
-      if (result.hasError) {
-        botMessage = createMessage("bot", { text: ERROR_MESSAGE });
-      } else if (!result.universities.length && !result.scholarships.length) {
-        botMessage = createMessage("bot", { text: EMPTY_MESSAGE });
-      } else {
-        botMessage = createMessage("bot", { text: RESULTS_MESSAGE, results: result });
-      }
-      setMessages((previous) => [...previous, botMessage]);
-      setStatus("done");
-    },
-    []
-  );
+    let botMessage;
+    if (result.hasError) {
+      botMessage = createMessage("bot", { text: ERROR_MESSAGE });
+    } else if (!result.programs.length) {
+      botMessage = createMessage("bot", { text: EMPTY_MESSAGE });
+    } else {
+      botMessage = createMessage("bot", { text: RESULTS_MESSAGE, results: result });
+    }
+    setMessages((previous) => [...previous, botMessage]);
+    setStatus("done");
+  }, []);
 
   const selectOption = useCallback(
     (option) => {
       if (status !== "asking") return;
 
-      const updatedSelections = { ...selections, [currentStep.id]: option.id };
+      const node = NODES[nodeId];
+      const nextNodeId = option.next ?? node.next;
       const newMessages = [createMessage("user", { text: option.label })];
-      const isLastStep = stepIndex === FLOW_STEPS.length - 1;
 
-      setSelections(updatedSelections);
-      if (isLastStep) {
+      let nextAnswers = answers;
+      let nextScores = option.resetScores ? {} : quizScores;
+      if (node.scoring) nextScores = addScores(nextScores, option.scores);
+      if (node.answerKey === "areas") nextAnswers = { ...answers, areas: option.areas };
+      else if (node.answerKey) nextAnswers = { ...answers, [node.answerKey]: option.id };
+
+      setQuizScores(nextScores);
+
+      if (nextNodeId === "profile") {
+        // End of the vocational test: show the analysis, then offer to search.
+        const profile = buildProfile(nextScores);
+        nextAnswers = { ...nextAnswers, areas: profile.areaIds };
+        newMessages.push(
+          createMessage("bot", { text: profile.text }),
+          createMessage("bot", { text: NODES.confirm_search.question })
+        );
+        setNodeId("confirm_search");
+      } else if (nextNodeId === "search") {
+        setAnswers(nextAnswers);
         setMessages((previous) => [...previous, ...newMessages]);
-        runSearch(updatedSelections);
+        runSearch(nextAnswers);
+        return;
       } else {
-        newMessages.push(createMessage("bot", { text: FLOW_STEPS[stepIndex + 1].question }));
-        setMessages((previous) => [...previous, ...newMessages]);
-        setStepIndex(stepIndex + 1);
+        newMessages.push(createMessage("bot", { text: NODES[nextNodeId].question }));
+        setNodeId(nextNodeId);
       }
+
+      setAnswers(nextAnswers);
+      setMessages((previous) => [...previous, ...newMessages]);
     },
-    [status, selections, currentStep, stepIndex, runSearch]
+    [status, nodeId, answers, quizScores, runSearch]
   );
 
   const restart = useCallback(() => {
     setMessages(buildInitialMessages());
-    setStepIndex(0);
-    setSelections({});
+    setNodeId("start");
+    setAnswers(EMPTY_ANSWERS);
+    setQuizScores({});
     setStatus("asking");
   }, []);
 
   return {
     messages,
-    options: currentStep ? currentStep.options : [],
+    options: status === "asking" ? NODES[nodeId].options : [],
     isSearching: status === "searching",
     isFinished: status === "done",
     selectOption,
